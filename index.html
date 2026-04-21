@@ -5,42 +5,42 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MTSS Data Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --navy:#0f1f3d;--navy2:#162847;--navy3:#1e3560;
-  --slate:#334e7a;--slate2:#4a6a9e;
-  --text:#f0f4fc;--text2:#a8bcdc;--text3:#6a8ab8;
-  --surface:#1a2e52;--surface2:#223660;--surface3:#0d1a30;
-  --border:#2a4070;--border2:#3a5590;
-  --critical:#e05252;--critical-bg:#2d1010;--critical-light:#f4a0a0;
-  --flagged:#e0803a;--flagged-bg:#2d1a08;--flagged-light:#f4c090;
-  --watch:#d4b832;--watch-bg:#2a2208;--watch-light:#f0e090;
-  --typical:#a8bcdc;--typical-bg:#1a2e52;
-  --strength:#52c48a;--strength-bg:#0d2a1a;--strength-light:#90e0b4;
-  --above:#4a9ee0;--above-bg:#0d1a2d;--above-light:#90c8f4;
-  --font-sans:'IBM Plex Sans',sans-serif;
+  --navy:#0f172a;--navy2:#131e2e;--navy3:#1a2540;
+  --slate:#1e3a5f;--slate2:#2d5282;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --surface:#1e293b;--surface2:#263548;--surface3:#0b1220;
+  --border:#2d3f55;--border2:#3d5268;
+  --critical:#f87171;--critical-bg:#2d1010;--critical-light:#fca5a5;
+  --flagged:#fb923c;--flagged-bg:#2d1a08;--flagged-light:#fdba74;
+  --watch:#facc15;--watch-bg:#2a2208;--watch-light:#fde68a;
+  --typical:#94a3b8;--typical-bg:#1e293b;
+  --strength:#4ade80;--strength-bg:#0d2a1a;--strength-light:#86efac;
+  --above:#60a5fa;--above-bg:#0d1a2d;--above-light:#93c5fd;
+  --font-sans:'Inter',system-ui,-apple-system,sans-serif;
   --font-mono:'IBM Plex Mono',monospace;
 }
 body{background:var(--navy);color:var(--text);font-family:var(--font-sans);font-size:16px;min-height:100vh}
 /* Header */
 .app-header{background:var(--navy3);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:stretch;gap:0}
 .app-logo{padding:16px 20px 16px 0;border-right:1px solid var(--border);margin-right:8px;display:flex;align-items:center;gap:10px;flex-shrink:0}
-.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,#4a9ee0,#52c48a);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:500;font-size:15px;color:#fff}
-.logo-text{font-size:17px;font-weight:600;letter-spacing:0.02em;color:var(--text)}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,#60a5fa,#4ade80);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:500;font-size:15px;color:#fff}
+.logo-text{font-size:17px;font-weight:600;letter-spacing:-0.01em;color:var(--text)}
 .logo-sub{font-size:13px;color:var(--text3);font-family:var(--font-mono)}
 .nav-tabs{display:flex;align-items:stretch;gap:2px;padding:0 8px;flex:1;overflow-x:auto}
-.tab-btn{background:none;border:none;color:var(--text3);font-family:var(--font-sans);font-size:15px;font-weight:400;padding:0 14px;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;white-space:nowrap;letter-spacing:0.02em}
+.tab-btn{background:none;border:none;color:var(--text3);font-family:var(--font-sans);font-size:14px;font-weight:500;padding:0 16px;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;white-space:nowrap;letter-spacing:-0.01em}
 .tab-btn:hover{color:var(--text2)}
-.tab-btn.active{color:var(--text);border-bottom-color:#4a9ee0;font-weight:500}
+.tab-btn.active{color:var(--text);border-bottom-color:#60a5fa;font-weight:600}
 .header-actions{display:flex;align-items:center;gap:8px;padding:0 0 0 16px;border-left:1px solid var(--border);margin-left:auto;flex-shrink:0}
-.btn{background:var(--surface2);border:1px solid var(--border2);color:var(--text2);font-family:var(--font-sans);font-size:14px;padding:6px 14px;border-radius:5px;cursor:pointer;transition:all 0.15s;font-weight:400}
+.btn{background:var(--surface2);border:1px solid var(--border2);color:var(--text2);font-family:var(--font-sans);font-size:14px;padding:7px 16px;border-radius:8px;cursor:pointer;transition:all 0.15s;font-weight:500;letter-spacing:-0.01em}
 .btn:hover{background:var(--slate);color:var(--text);border-color:var(--slate2)}
-.btn-primary{background:#1e5fa0;border-color:#2a7ac8;color:#c8e4ff}
-.btn-primary:hover{background:#2470b8}
-.btn-sm{padding:4px 10px;font-size:13px}
+.btn-primary{background:#1d4ed8;border-color:#2563eb;color:#eff6ff}
+.btn-primary:hover{background:#2563eb}
+.btn-sm{padding:4px 12px;font-size:13px}
 .btn-danger{background:#2d1010;border-color:var(--critical);color:var(--critical-light)}
 .btn-danger:hover{background:#3d1818}
 .btn-success{background:var(--strength-bg);border-color:var(--strength);color:var(--strength-light)}
@@ -50,8 +50,8 @@ body{background:var(--navy);color:var(--text);font-family:var(--font-sans);font-
 /* Panels */
 .panel-header{margin-bottom:20px;display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
 .panel-header-left{flex:1}
-.panel-title{font-size:20px;font-weight:500;color:var(--text);margin-bottom:4px}
-.panel-sub{font-size:14px;color:var(--text3);font-family:var(--font-mono)}
+.panel-title{font-size:20px;font-weight:600;color:var(--text);margin-bottom:4px;letter-spacing:-0.02em}
+.panel-sub{font-size:13px;color:var(--text3);font-family:var(--font-mono)}
 /* Window toggle */
 .window-toggle{display:flex;background:var(--surface3);border:1px solid var(--border);border-radius:6px;overflow:hidden}
 .win-btn{background:none;border:none;color:var(--text3);font-family:var(--font-mono);font-size:14px;padding:6px 16px;cursor:pointer;transition:all 0.15s;border-right:1px solid var(--border)}
@@ -60,10 +60,10 @@ body{background:var(--navy);color:var(--text);font-family:var(--font-sans);font-
 .win-btn.disabled{opacity:0.35;cursor:not-allowed}
 /* Metric cards */
 .metric-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
-.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
-.metric-label{font-size:13px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px}
-.metric-value{font-size:24px;font-weight:500;font-family:var(--font-mono);color:var(--text)}
-.metric-sub{font-size:13px;color:var(--text3);margin-top:3px}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+.metric-label{font-size:12px;color:var(--text3);font-family:var(--font-sans);font-weight:500;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px}
+.metric-value{font-size:26px;font-weight:600;font-family:var(--font-mono);color:var(--text);letter-spacing:-0.02em}
+.metric-sub{font-size:13px;color:var(--text3);margin-top:4px}
 /* Status badges */
 .badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:13px;font-family:var(--font-mono);font-weight:500;letter-spacing:0.04em;white-space:nowrap}
 .badge-critical{background:var(--critical-bg);color:var(--critical-light);border:1px solid var(--critical)}
@@ -75,16 +75,16 @@ body{background:var(--navy);color:var(--text);font-family:var(--font-sans);font-
 .badge-pm2{background:#1a1a3a;color:#a0a0f4;border:1px solid #5050c8;font-size:12px}
 .badge-pm3{background:#2a0a2a;color:#e0a0e0;border:1px solid #a050a0;font-size:12px}
 /* Tables */
-.table-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border)}
-table{width:100%;border-collapse:collapse;font-size:15px}
-th{background:var(--surface);color:var(--text3);font-weight:500;font-family:var(--font-mono);font-size:13px;text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
-td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{background:var(--surface);color:var(--text3);font-weight:600;font-family:var(--font-sans);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;padding:11px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:var(--surface)}
-td.mono{font-family:var(--font-mono);font-size:14px}
+tr:hover td{background:rgba(255,255,255,0.03)}
+td.mono{font-family:var(--font-mono);font-size:13px}
 td.right{text-align:right}
 td.center{text-align:center}
-td.name{color:var(--text);font-weight:400}
+td.name{color:var(--text);font-weight:500}
 /* Z-score cells for heatmap */
 .z-cell{font-family:var(--font-mono);font-size:14px;text-align:center;padding:7px 6px!important;border-radius:3px;white-space:nowrap}
 .z-critical{background:var(--critical-bg);color:var(--critical-light)}
@@ -95,8 +95,8 @@ td.name{color:var(--text);font-weight:400}
 /* Individual profile */
 .profile-select-wrap{display:flex;align-items:center;gap:12px;margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;flex-wrap:wrap}
 .profile-select-wrap label{font-size:14px;color:var(--text3);font-family:var(--font-mono);white-space:nowrap}
-select{background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--font-sans);font-size:15px;padding:6px 10px;border-radius:5px;cursor:pointer;outline:none;min-width:200px}
-select:focus{border-color:#4a9ee0}
+select{background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--font-sans);font-size:14px;padding:8px 12px;border-radius:8px;cursor:pointer;outline:none;min-width:200px;height:42px}
+select:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,165,250,0.15)}
 .profile-name{font-size:22px;font-weight:500;color:var(--text)}
 /* Profile grid */
 .profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
@@ -171,16 +171,24 @@ select:focus{border-color:#4a9ee0}
 .preview-table-wrap th{font-size:12px;padding:6px 8px}
 .preview-table-wrap td{padding:5px 8px}
 /* Settings */
-.settings-section{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:20px}
-.settings-title{font-size:16px;font-weight:500;color:var(--text);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.settings-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px}
+.settings-title{font-size:18px;font-weight:600;color:var(--text);margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);letter-spacing:-0.02em}
 .settings-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .settings-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .settings-field{display:flex;flex-direction:column;gap:6px}
-.settings-field label{font-size:13px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.05em}
-input[type=text],input[type=number],input[type=date]{background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--font-sans);font-size:15px;padding:7px 10px;border-radius:5px;outline:none;width:100%}
-input[type=text]:focus,input[type=number]:focus,input[type=date]:focus{border-color:#4a9ee0}
-textarea{background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--font-mono);font-size:13px;padding:10px;border-radius:5px;outline:none;width:100%;resize:vertical;line-height:1.5}
-textarea:focus{border-color:#4a9ee0}
+.settings-field label{font-size:13px;color:var(--text2);font-family:var(--font-sans);font-weight:500;letter-spacing:-0.01em}
+/* Domain config cards */
+.domain-config-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:14px}
+.domain-config-card:last-child{margin-bottom:0}
+.domain-config-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.domain-config-tag{font-family:var(--font-mono);font-size:12px;font-weight:500;background:var(--surface3);color:var(--text3);border:1px solid var(--border);border-radius:5px;padding:3px 8px;letter-spacing:0.04em}
+.domain-config-name-input{flex:1}
+.benchmark-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.benchmark-grid-label{font-size:12px;font-weight:600;color:var(--text3);font-family:var(--font-sans);text-transform:uppercase;letter-spacing:0.08em;text-align:center;margin-bottom:6px}
+input[type=text],input[type=number],input[type=date]{background:var(--surface3);border:1px solid var(--border2);color:var(--text);font-family:var(--font-sans);font-size:15px;padding:0 14px;border-radius:9px;outline:none;width:100%;height:42px;transition:border-color 0.15s,box-shadow 0.15s}
+input[type=text]:focus,input[type=number]:focus,input[type=date]:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,165,250,0.15)}
+textarea{background:var(--surface3);border:1px solid var(--border2);color:var(--text);font-family:var(--font-mono);font-size:14px;padding:12px 14px;border-radius:9px;outline:none;width:100%;resize:vertical;line-height:1.6;transition:border-color 0.15s,box-shadow 0.15s}
+textarea:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,165,250,0.15)}
 /* Legend */
 .legend-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
 .legend-item{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text3);font-family:var(--font-mono)}
@@ -188,7 +196,7 @@ textarea:focus{border-color:#4a9ee0}
 /* Priority list rank */
 .rank-badge{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);font-family:var(--font-mono);font-size:13px;color:var(--text3)}
 /* Info callout */
-.callout{background:var(--surface);border-left:3px solid var(--slate2);border-radius:0 6px 6px 0;padding:12px 16px;margin-bottom:20px;font-size:14px;color:var(--text2);line-height:1.6}
+.callout{background:var(--surface);border-left:3px solid var(--slate2);border-radius:0 8px 8px 0;padding:14px 18px;margin-bottom:20px;font-size:14px;color:var(--text2);line-height:1.7}
 .callout strong{color:var(--text);font-weight:500}
 .callout-warning{border-left-color:var(--watch)}
 .callout-success{border-left-color:var(--strength)}
@@ -1263,22 +1271,28 @@ function renderColumnMapper(){
 // CONFIGURATION (benchmarks, domain names, window)
 // ============================================================
 function renderConfiguration(){
-  const bmFields = DOMAINS.map(d => {
-    const winInputs = WINDOWS.map(w => `
+  const domainCards = DOMAINS.map(d => {
+    const benchmarkCols = WINDOWS.map(w => `
       <div class="settings-field">
-        <label>${config.domainNames[d]} ${w} Benchmark</label>
-        <input type="number" id="bm-${d}-${w}" value="${getBenchmark(d,w)}" min="0" max="999">
+        <div class="benchmark-grid-label">${w}</div>
+        <input type="number" id="bm-${d}-${w}" value="${getBenchmark(d,w)}" min="0" max="999" placeholder="${w} target">
       </div>`).join('');
-    const dnField = `<div class="settings-field">
-        <label>${d} Domain Name</label>
-        <input type="text" id="dn-${d}" value="${config.domainNames[d]}">
+    return `
+      <div class="domain-config-card">
+        <div class="domain-config-header">
+          <span class="domain-config-tag">${d}</span>
+          <div class="domain-config-name-input settings-field" style="margin:0">
+            <input type="text" id="dn-${d}" value="${config.domainNames[d]}" placeholder="Domain name" style="height:36px;font-size:14px;font-weight:500">
+          </div>
+        </div>
+        <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Benchmark Targets</div>
+        <div class="benchmark-grid">${benchmarkCols}</div>
       </div>`;
-    return `<div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:12px;margin-top:4px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">${dnField}${winInputs}</div>`;
   }).join('');
 
   const activeWinInputs = WINDOWS.map(w=>
-    `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;color:var(--text2)">
-      <input type="radio" name="active-window" value="${w}" ${currentWindow===w?'checked':''} onchange="currentWindow=this.value;config.activeWindow=this.value"> ${w}
+    `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:15px;color:var(--text2);font-family:var(--font-sans);font-weight:500;background:var(--surface2);border:1px solid ${currentWindow===w?'#60a5fa':'var(--border)'};border-radius:8px;padding:10px 18px;transition:all 0.15s">
+      <input type="radio" name="active-window" value="${w}" ${currentWindow===w?'checked':''} onchange="currentWindow=this.value;config.activeWindow=this.value" style="accent-color:#60a5fa"> ${w}
     </label>`
   ).join('');
 
@@ -1292,14 +1306,14 @@ function renderConfiguration(){
 
     <div class="settings-section">
       <div class="settings-title">Active Assessment Window</div>
-      <p style="font-size:14px;color:var(--text3);margin-bottom:12px">Select which window to display by default across all views.</p>
-      <div style="display:flex;gap:20px">${activeWinInputs}</div>
+      <p style="font-size:14px;color:var(--text3);margin-bottom:16px">Select which window to display by default across all views.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">${activeWinInputs}</div>
     </div>
 
     <div class="settings-section">
-      <div class="settings-title">Domain Names &amp; Benchmarks by Window</div>
-      <p style="font-size:14px;color:var(--text3);margin-bottom:12px">Set benchmark targets for each domain for each assessment window (BOY/MOY/EOY benchmarks differ for most assessments).</p>
-      <div style="display:grid;gap:10px">${bmFields}</div>
+      <div class="settings-title">Domain Names &amp; Benchmarks</div>
+      <p style="font-size:14px;color:var(--text3);margin-bottom:20px">Set benchmark targets for each domain. BOY/MOY/EOY benchmarks typically differ — configure each window independently.</p>
+      ${domainCards}
       <div style="margin-top:20px;display:flex;gap:8px">
         <button class="btn btn-primary" onclick="saveConfig()">Save Configuration</button>
         <button class="btn" onclick="resetConfig()">Reset to Defaults</button>
