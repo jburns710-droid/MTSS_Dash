@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTSS Data Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0f1f3d;--navy2:#162847;--navy3:#1e3560;
+  --slate:#334e7a;--slate2:#4a6a9e;
+  --text:#f0f4fc;--text2:#a8bcdc;--text3:#6a8ab8;
+  --surface:#1a2e52;--surface2:#223660;--surface3:#0d1a30;
+  --border:#2a4070;--border2:#3a5590;
+  --critical:#e05252;--critical-bg:#2d1010;--critical-light:#f4a0a0;
+  --flagged:#e0803a;--flagged-bg:#2d1a08;--flagged-light:#f4c090;
+  --watch:#d4b832;--watch-bg:#2a2208;--watch-light:#f0e090;
+  --typical:#a8bcdc;--typical-bg:#1a2e52;
+  --strength:#52c48a;--strength-bg:#0d2a1a;--strength-light:#90e0b4;
+  --above:#4a9ee0;--above-bg:#0d1a2d;--above-light:#90c8f4;
+  --font-sans:'IBM Plex Sans',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+body{background:var(--navy);color:var(--text);font-family:var(--font-sans);font-size:14px;min-height:100vh}
+/* Header */
+.app-header{background:var(--navy3);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:stretch;gap:0}
+.app-logo{padding:16px 20px 16px 0;border-right:1px solid var(--border);margin-right:8px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,#4a9ee0,#52c48a);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:500;font-size:13px;color:#fff}
+.logo-text{font-size:15px;font-weight:600;letter-spacing:0.02em;color:var(--text)}
+.logo-sub{font-size:11px;color:var(--text3);font-family:var(--font-mono)}
+.nav-tabs{display:flex;align-items:stretch;gap:2px;padding:0 8px;flex:1;overflow-x:auto}
+.tab-btn{background:none;border:none;color:var(--text3);font-family:var(--font-sans);font-size:13px;font-weight:400;padding:0 14px;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;white-space:nowrap;letter-spacing:0.02em}
+.tab-btn:hover{color:var(--text2)}
+.tab-btn.active{color:var(--text);border-bottom-color:#4a9ee0;font-weight:500}
+.header-actions{display:flex;align-items:center;gap:8px;padding:0 0 0 16px;border-left:1px solid var(--border);margin-left:auto;flex-shrink:0}
+.btn{background:var(--surface2);border:1px solid var(--border2);color:var(--text2);font-family:var(--font-sans);font-size:12px;padding:6px 14px;border-radius:5px;cursor:pointer;transition:all 0.15s;font-weight:400}
+.btn:hover{background:var(--slate);color:var(--text);border-color:var(--slate2)}
+.btn-primary{background:#1e5fa0;border-color:#2a7ac8;color:#c8e4ff}
+.btn-primary:hover{background:#2470b8}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-danger{background:#2d1010;border-color:var(--critical);color:var(--critical-light)}
+.btn-danger:hover{background:#3d1818}
+.btn-success{background:var(--strength-bg);border-color:var(--strength);color:var(--strength-light)}
+/* Layout */
+.app-body{display:flex;height:calc(100vh - 57px)}
+.main-panel{flex:1;overflow:auto;padding:24px}
+/* Panels */
+.panel-header{margin-bottom:20px;display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.panel-header-left{flex:1}
+.panel-title{font-size:18px;font-weight:500;color:var(--text);margin-bottom:4px}
+.panel-sub{font-size:12px;color:var(--text3);font-family:var(--font-mono)}
+/* Window toggle */
+.window-toggle{display:flex;background:var(--surface3);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.win-btn{background:none;border:none;color:var(--text3);font-family:var(--font-mono);font-size:12px;padding:6px 16px;cursor:pointer;transition:all 0.15s;border-right:1px solid var(--border)}
+.win-btn:last-child{border-right:none}
+.win-btn.active{background:var(--surface2);color:var(--text);font-weight:500}
+.win-btn.disabled{opacity:0.35;cursor:not-allowed}
+/* Metric cards */
+.metric-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+.metric-label{font-size:11px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px}
+.metric-value{font-size:22px;font-weight:500;font-family:var(--font-mono);color:var(--text)}
+.metric-sub{font-size:11px;color:var(--text3);margin-top:3px}
+/* Status badges */
+.badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-family:var(--font-mono);font-weight:500;letter-spacing:0.04em;white-space:nowrap}
+.badge-critical{background:var(--critical-bg);color:var(--critical-light);border:1px solid var(--critical)}
+.badge-flagged{background:var(--flagged-bg);color:var(--flagged-light);border:1px solid var(--flagged)}
+.badge-watch{background:var(--watch-bg);color:var(--watch-light);border:1px solid var(--watch)}
+.badge-typical{background:var(--typical-bg);color:var(--typical);border:1px solid var(--border)}
+.badge-strength{background:var(--strength-bg);color:var(--strength-light);border:1px solid var(--strength)}
+.badge-above{background:var(--above-bg);color:var(--above-light);border:1px solid var(--above)}
+.badge-pm2{background:#1a1a3a;color:#a0a0f4;border:1px solid #5050c8;font-size:10px}
+.badge-pm3{background:#2a0a2a;color:#e0a0e0;border:1px solid #a050a0;font-size:10px}
+/* Tables */
+.table-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--surface);color:var(--text3);font-weight:500;font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface)}
+td.mono{font-family:var(--font-mono);font-size:12px}
+td.right{text-align:right}
+td.center{text-align:center}
+td.name{color:var(--text);font-weight:400}
+/* Z-score cells for heatmap */
+.z-cell{font-family:var(--font-mono);font-size:12px;text-align:center;padding:7px 6px!important;border-radius:3px;white-space:nowrap}
+.z-critical{background:var(--critical-bg);color:var(--critical-light)}
+.z-flagged{background:var(--flagged-bg);color:var(--flagged-light)}
+.z-watch{background:var(--watch-bg);color:var(--watch-light)}
+.z-typical{color:var(--text3)}
+.z-strength{background:var(--strength-bg);color:var(--strength-light)}
+/* Individual profile */
+.profile-select-wrap{display:flex;align-items:center;gap:12px;margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;flex-wrap:wrap}
+.profile-select-wrap label{font-size:12px;color:var(--text3);font-family:var(--font-mono);white-space:nowrap}
+select{background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--font-sans);font-size:13px;padding:6px 10px;border-radius:5px;cursor:pointer;outline:none;min-width:200px}
+select:focus{border-color:#4a9ee0}
+.profile-name{font-size:20px;font-weight:500;color:var(--text)}
+/* Profile grid */
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.domain-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px}
+.domain-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.domain-name{font-size:13px;font-weight:500;color:var(--text)}
+.domain-score{font-size:28px;font-weight:500;font-family:var(--font-mono);color:var(--text)}
+.domain-rows{display:flex;flex-direction:column;gap:6px}
+.domain-row{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.domain-row-label{color:var(--text3);font-family:var(--font-mono)}
+.domain-row-val{display:flex;align-items:center;gap:6px}
+.z-number{font-family:var(--font-mono);font-size:12px;color:var(--text2)}
+/* Z-bar visualization */
+.z-bar-wrap{display:flex;align-items:center;gap:8px;margin-top:10px}
+.z-bar-track{flex:1;height:4px;background:var(--border);border-radius:2px;position:relative}
+.z-bar-center{position:absolute;left:50%;top:0;width:1px;height:4px;background:var(--text3)}
+.z-bar-fill{position:absolute;top:0;height:4px;border-radius:2px;transition:width 0.3s,left 0.3s}
+.z-bar-label{font-family:var(--font-mono);font-size:11px;color:var(--text3);min-width:40px;text-align:right}
+/* Timeline mini-chart for BOY/MOY/EOY in profile */
+.timeline-wrap{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.timeline-win{display:flex;flex-direction:column;align-items:center;gap:2px}
+.timeline-label{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+.timeline-score{font-size:13px;font-weight:500;font-family:var(--font-mono);color:var(--text2)}
+.timeline-arrow{color:var(--text3);font-size:14px;flex-shrink:0}
+.timeline-arrow.up{color:var(--strength)}
+.timeline-arrow.down{color:var(--critical)}
+.timeline-delta{font-size:10px;font-family:var(--font-mono);margin-top:1px}
+.timeline-delta.pos{color:var(--strength)}
+.timeline-delta.neg{color:var(--critical)}
+/* Domain summary */
+.domain-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.tier-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px}
+.tier-card.concern{border-color:var(--flagged)}
+.tier-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.tier-title{font-size:14px;font-weight:500}
+.tier-concern-badge{font-size:11px;font-family:var(--font-mono);padding:3px 8px;background:var(--flagged-bg);color:var(--flagged-light);border:1px solid var(--flagged);border-radius:3px}
+.tier-ok-badge{font-size:11px;font-family:var(--font-mono);padding:3px 8px;background:var(--strength-bg);color:var(--strength-light);border:1px solid var(--strength);border-radius:3px}
+.tier-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.tier-stat{text-align:center}
+.tier-stat-val{font-size:20px;font-weight:500;font-family:var(--font-mono)}
+.tier-stat-label{font-size:11px;color:var(--text3);margin-top:2px}
+.progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:10px}
+.progress-fill{height:100%;border-radius:3px;transition:width 0.5s}
+/* Window comparison row in domain summary */
+.win-compare{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap}
+.win-compare-item{display:flex;flex-direction:column;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:6px 12px}
+.win-compare-label{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+.win-compare-val{font-size:16px;font-weight:500;font-family:var(--font-mono);color:var(--text)}
+/* Data Input */
+.import-tabs{display:flex;gap:2px;margin-bottom:20px}
+.import-tab-btn{background:var(--surface);border:1px solid var(--border);color:var(--text3);font-family:var(--font-sans);font-size:13px;padding:8px 18px;cursor:pointer;border-radius:6px 6px 0 0;transition:all 0.15s}
+.import-tab-btn.active{background:var(--surface2);color:var(--text);border-bottom-color:var(--surface2)}
+.import-section{background:var(--surface);border:1px solid var(--border);border-radius:0 8px 8px 8px;padding:20px}
+.import-section-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:12px}
+/* Drop zone */
+.drop-zone{border:2px dashed var(--border2);border-radius:8px;padding:40px;text-align:center;cursor:pointer;transition:all 0.2s;position:relative}
+.drop-zone:hover,.drop-zone.dragover{border-color:#4a9ee0;background:rgba(74,158,224,0.05)}
+.drop-zone-icon{font-size:32px;margin-bottom:10px;color:var(--text3)}
+.drop-zone-text{font-size:14px;color:var(--text2);margin-bottom:6px}
+.drop-zone-sub{font-size:12px;color:var(--text3)}
+#file-input{position:absolute;inset:0;opacity:0;cursor:pointer}
+/* Column mapper */
+.mapper-wrap{margin-top:20px;background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:16px}
+.mapper-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:12px}
+.mapper-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.mapper-row{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px}
+.mapper-target{font-size:12px;font-family:var(--font-mono);color:var(--text2);width:110px;flex-shrink:0;font-weight:500}
+.mapper-arrow{color:var(--text3);flex-shrink:0}
+.mapper-select{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--font-mono);font-size:11px;padding:4px 8px;border-radius:4px;outline:none}
+.preview-table-wrap{max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;margin-top:12px}
+.preview-table-wrap table{font-size:11px}
+.preview-table-wrap th{font-size:10px;padding:6px 8px}
+.preview-table-wrap td{padding:5px 8px}
+/* Settings */
+.settings-section{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:20px}
+.settings-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.settings-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.settings-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.settings-field{display:flex;flex-direction:column;gap:6px}
+.settings-field label{font-size:11px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.05em}
+input[type=text],input[type=number],input[type=date]{background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--font-sans);font-size:13px;padding:7px 10px;border-radius:5px;outline:none;width:100%}
+input[type=text]:focus,input[type=number]:focus,input[type=date]:focus{border-color:#4a9ee0}
+textarea{background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--font-mono);font-size:11px;padding:10px;border-radius:5px;outline:none;width:100%;resize:vertical;line-height:1.5}
+textarea:focus{border-color:#4a9ee0}
+/* Legend */
+.legend-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);font-family:var(--font-mono)}
+.legend-dot{width:10px;height:10px;border-radius:2px}
+/* Priority list rank */
+.rank-badge{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);font-family:var(--font-mono);font-size:11px;color:var(--text3)}
+/* Info callout */
+.callout{background:var(--surface);border-left:3px solid var(--slate2);border-radius:0 6px 6px 0;padding:12px 16px;margin-bottom:20px;font-size:12px;color:var(--text2);line-height:1.6}
+.callout strong{color:var(--text);font-weight:500}
+.callout-warning{border-left-color:var(--watch)}
+.callout-success{border-left-color:var(--strength)}
+/* Hidden */
+.hidden{display:none!important}
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#1e5fa0;border:1px solid #2a7ac8;color:#c8e4ff;font-family:var(--font-mono);font-size:12px;padding:10px 18px;border-radius:6px;z-index:1000;opacity:0;transform:translateY(10px);transition:all 0.25s;max-width:320px}
+.toast.show{opacity:1;transform:translateY(0)}
+/* Cohort comparison chart area */
+.chart-section{margin-bottom:24px}
+.domain-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:5px}
+.domain-bar-label{font-family:var(--font-mono);font-size:12px;color:var(--text3);width:30px;text-align:right}
+.domain-bar-outer{flex:1;height:18px;background:var(--border);border-radius:3px;overflow:hidden;position:relative}
+.domain-bar-student{height:100%;border-radius:3px;position:absolute;top:0;left:0;transition:width 0.4s}
+.domain-bar-bm{position:absolute;top:0;height:100%;width:2px;background:#4a9ee0;opacity:0.7}
+.domain-bar-val{font-family:var(--font-mono);font-size:11px;color:var(--text2);width:28px}
+/* Progress Monitoring */
+.pm-student-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;flex-wrap:wrap}
+.pm-tracks{display:flex;flex-direction:column;gap:20px}
+.pm-track-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px}
+.pm-track-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.pm-track-name{font-size:15px;font-weight:500;color:var(--text);flex:1}
+.pm-chart-wrap{position:relative;height:160px;background:var(--surface3);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:12px}
+.pm-chart-svg{width:100%;height:100%}
+.pm-track-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:12px}
+.pm-stat{background:var(--surface3);border:1px solid var(--border);border-radius:5px;padding:8px 12px}
+.pm-stat-label{font-size:10px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px}
+.pm-stat-val{font-size:16px;font-weight:500;font-family:var(--font-mono);color:var(--text)}
+.pm-stat-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.pm-add-point{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--border)}
+.pm-add-point .settings-field{min-width:130px}
+/* PM Summary table */
+.pm-status-on{color:var(--strength)}
+.pm-status-off{color:var(--critical)}
+/* Tier badge */
+.tier-2-badge{background:#1a1a3a;color:#a0a0f4;border:1px solid #5050c8;font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:3px;font-weight:500}
+.tier-3-badge{background:#2a0a2a;color:#e0a0e0;border:1px solid #a050a0;font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:3px;font-weight:500}
+/* Data status bar */
+.data-status{background:var(--surface3);border:1px solid var(--border);border-radius:6px;padding:8px 16px;display:flex;align-items:center;gap:12px;margin-bottom:20px;font-size:12px;font-family:var(--font-mono)}
+.data-status-dot{width:8px;height:8px;border-radius:50%;background:var(--strength);flex-shrink:0}
+.data-status-dot.empty{background:var(--text3)}
+/* Scrollable */
+.scroll-x{overflow-x:auto}
+/* Google Sheets URL input */
+.sheets-wrap{display:flex;gap:8px;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap}
+.sheets-wrap .settings-field{flex:1;min-width:300px}
+/* Empty state */
+.empty-state{text-align:center;padding:60px 20px}
+.empty-state-icon{font-size:48px;margin-bottom:16px;opacity:0.4}
+.empty-state-title{font-size:18px;font-weight:500;color:var(--text2);margin-bottom:8px}
+.empty-state-sub{font-size:13px;color:var(--text3);margin-bottom:20px}
+/* Responsive */
+@media(max-width:768px){
+  .profile-grid{grid-template-columns:1fr}
+  .domain-summary-grid{grid-template-columns:1fr}
+  .settings-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-logo">
+    <div class="logo-mark">Mx</div>
+    <div>
+      <div class="logo-text">MTSS Dashboard</div>
+      <div class="logo-sub">multi-tiered data system</div>
+    </div>
+  </div>
+  <nav class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('heatmap')">Cohort Heatmap</button>
+    <button class="tab-btn" onclick="switchTab('profile')">Individual Profile</button>
+    <button class="tab-btn" onclick="switchTab('priority')">Priority List</button>
+    <button class="tab-btn" onclick="switchTab('domain')">Domain Summary</button>
+    <button class="tab-btn" onclick="switchTab('pm')">Progress Monitoring</button>
+    <button class="tab-btn" onclick="switchTab('data')">Data Input</button>
+    <button class="tab-btn" onclick="switchTab('settings')">⚙ Settings</button>
+  </nav>
+  <div class="header-actions">
+    <button class="btn" onclick="exportCSV()">Export CSV</button>
+  </div>
+</header>
+
+<div class="app-body">
+  <div class="main-panel" id="main-panel"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// CONSTANTS & CONFIG
+// ============================================================
+const DOMAINS = ['D1','D2','D3','D4','D5','D6'];
+const WINDOWS = ['BOY','MOY','EOY'];
+
+const DEFAULT_BENCHMARKS = {
+  D1:{BOY:70,MOY:75,EOY:80},
+  D2:{BOY:70,MOY:75,EOY:80},
+  D3:{BOY:70,MOY:75,EOY:80},
+  D4:{BOY:70,MOY:75,EOY:80},
+  D5:{BOY:70,MOY:75,EOY:80},
+  D6:{BOY:70,MOY:75,EOY:80}
+};
+const DEFAULT_DOMAIN_NAMES = {D1:'Domain 1',D2:'Domain 2',D3:'Domain 3',D4:'Domain 4',D5:'Domain 5',D6:'Domain 6'};
+
+// Try to load from localStorage
+function loadConfig(){
+  try{
+    const s=localStorage.getItem('mtss_config');
+    if(s) return JSON.parse(s);
+  }catch(e){}
+  return {
+    benchmarks: JSON.parse(JSON.stringify(DEFAULT_BENCHMARKS)),
+    domainNames: {...DEFAULT_DOMAIN_NAMES},
+    activeWindow: 'BOY'
+  };
+}
+function saveConfigToStorage(){
+  try{localStorage.setItem('mtss_config',JSON.stringify(config));}catch(e){}
+}
+
+let config = loadConfig();
+
+// ============================================================
+// STUDENT DATA MODEL
+// students array: each element = {Student, D1_BOY, D1_MOY, D1_EOY, D2_BOY, ...}
+// ============================================================
+const RAW_STUDENTS = [{"Student":"Student 1","D1_BOY":60,"D1_MOY":65,"D1_EOY":70,"D2_BOY":67,"D2_MOY":70,"D2_EOY":73,"D3_BOY":84,"D3_MOY":86,"D3_EOY":89,"D4_BOY":63,"D4_MOY":66,"D4_EOY":69,"D5_BOY":67,"D5_MOY":71,"D5_EOY":75,"D6_BOY":98,"D6_MOY":99,"D6_EOY":100},
+{"Student":"Student 10","D1_BOY":60,"D1_MOY":62,"D1_EOY":64,"D2_BOY":78,"D2_MOY":80,"D2_EOY":83,"D3_BOY":84,"D3_MOY":85,"D3_EOY":87,"D4_BOY":65,"D4_MOY":68,"D4_EOY":71,"D5_BOY":81,"D5_MOY":83,"D5_EOY":86,"D6_BOY":96,"D6_MOY":97,"D6_EOY":99},
+{"Student":"Student 32","D1_BOY":60,"D1_MOY":63,"D1_EOY":67,"D2_BOY":68,"D2_MOY":70,"D2_EOY":73,"D3_BOY":96,"D3_MOY":97,"D3_EOY":98,"D4_BOY":76,"D4_MOY":77,"D4_EOY":78,"D5_BOY":61,"D5_MOY":63,"D5_EOY":66,"D6_BOY":71,"D6_MOY":73,"D6_EOY":76},
+{"Student":"Student 40","D1_BOY":60,"D1_MOY":62,"D1_EOY":64,"D2_BOY":66,"D2_MOY":68,"D2_EOY":70,"D3_BOY":74,"D3_MOY":76,"D3_EOY":78,"D4_BOY":94,"D4_MOY":95,"D4_EOY":96,"D5_BOY":73,"D5_MOY":75,"D5_EOY":77,"D6_BOY":82,"D6_MOY":83,"D6_EOY":85},
+{"Student":"Student 67","D1_BOY":60,"D1_MOY":63,"D1_EOY":66,"D2_BOY":88,"D2_MOY":89,"D2_EOY":91,"D3_BOY":83,"D3_MOY":84,"D3_EOY":86,"D4_BOY":85,"D4_MOY":86,"D4_EOY":87,"D5_BOY":62,"D5_MOY":64,"D5_EOY":66,"D6_BOY":66,"D6_MOY":68,"D6_EOY":70},
+{"Student":"Student 28","D1_BOY":61,"D1_MOY":64,"D1_EOY":68,"D2_BOY":100,"D2_MOY":100,"D2_EOY":100,"D3_BOY":90,"D3_MOY":91,"D3_EOY":92,"D4_BOY":62,"D4_MOY":65,"D4_EOY":68,"D5_BOY":86,"D5_MOY":87,"D5_EOY":89,"D6_BOY":76,"D6_MOY":77,"D6_EOY":79},
+{"Student":"Student 51","D1_BOY":61,"D1_MOY":65,"D1_EOY":69,"D2_BOY":84,"D2_MOY":85,"D2_EOY":87,"D3_BOY":79,"D3_MOY":80,"D3_EOY":82,"D4_BOY":89,"D4_MOY":90,"D4_EOY":91,"D5_BOY":76,"D5_MOY":77,"D5_EOY":79,"D6_BOY":68,"D6_MOY":70,"D6_EOY":72},
+{"Student":"Student 65","D1_BOY":61,"D1_MOY":63,"D1_EOY":66,"D2_BOY":98,"D2_MOY":99,"D2_EOY":99,"D3_BOY":96,"D3_MOY":96,"D3_EOY":97,"D4_BOY":66,"D4_MOY":68,"D4_EOY":70,"D5_BOY":95,"D5_MOY":96,"D5_EOY":97,"D6_BOY":83,"D6_MOY":84,"D6_EOY":86},
+{"Student":"Student 2","D1_BOY":62,"D1_MOY":64,"D1_EOY":67,"D2_BOY":62,"D2_MOY":64,"D2_EOY":67,"D3_BOY":74,"D3_MOY":76,"D3_EOY":79,"D4_BOY":67,"D4_MOY":70,"D4_EOY":73,"D5_BOY":90,"D5_MOY":91,"D5_EOY":92,"D6_BOY":91,"D6_MOY":92,"D6_EOY":94},
+{"Student":"Student 18","D1_BOY":62,"D1_MOY":64,"D1_EOY":66,"D2_BOY":96,"D2_MOY":96,"D2_EOY":97,"D3_BOY":97,"D3_MOY":97,"D3_EOY":98,"D4_BOY":86,"D4_MOY":87,"D4_EOY":88,"D5_BOY":65,"D5_MOY":67,"D5_EOY":70,"D6_BOY":93,"D6_MOY":94,"D6_EOY":95},
+{"Student":"Student 43","D1_BOY":62,"D1_MOY":65,"D1_EOY":68,"D2_BOY":86,"D2_MOY":87,"D2_EOY":88,"D3_BOY":95,"D3_MOY":95,"D3_EOY":96,"D4_BOY":73,"D4_MOY":75,"D4_EOY":77,"D5_BOY":75,"D5_MOY":77,"D5_EOY":79,"D6_BOY":79,"D6_MOY":81,"D6_EOY":83},
+{"Student":"Student 58","D1_BOY":62,"D1_MOY":64,"D1_EOY":66,"D2_BOY":73,"D2_MOY":75,"D2_EOY":77,"D3_BOY":62,"D3_MOY":64,"D3_EOY":67,"D4_BOY":70,"D4_MOY":72,"D4_EOY":74,"D5_BOY":81,"D5_MOY":82,"D5_EOY":84,"D6_BOY":76,"D6_MOY":78,"D6_EOY":80},
+{"Student":"Student 93","D1_BOY":62,"D1_MOY":64,"D1_EOY":66,"D2_BOY":78,"D2_MOY":79,"D2_EOY":80,"D3_BOY":62,"D3_MOY":64,"D3_EOY":67,"D4_BOY":79,"D4_MOY":80,"D4_EOY":81,"D5_BOY":83,"D5_MOY":84,"D5_EOY":86,"D6_BOY":96,"D6_MOY":97,"D6_EOY":98},
+{"Student":"Student 17","D1_BOY":63,"D1_MOY":66,"D1_EOY":69,"D2_BOY":89,"D2_MOY":90,"D2_EOY":91,"D3_BOY":76,"D3_MOY":78,"D3_EOY":80,"D4_BOY":75,"D4_MOY":76,"D4_EOY":77,"D5_BOY":82,"D5_MOY":83,"D5_EOY":85,"D6_BOY":95,"D6_MOY":96,"D6_EOY":97},
+{"Student":"Student 48","D1_BOY":63,"D1_MOY":65,"D1_EOY":67,"D2_BOY":75,"D2_MOY":77,"D2_EOY":79,"D3_BOY":66,"D3_MOY":68,"D3_EOY":71,"D4_BOY":82,"D4_MOY":83,"D4_EOY":84,"D5_BOY":85,"D5_MOY":86,"D5_EOY":88,"D6_BOY":73,"D6_MOY":75,"D6_EOY":77},
+{"Student":"Student 72","D1_BOY":63,"D1_MOY":66,"D1_EOY":69,"D2_BOY":94,"D2_MOY":95,"D2_EOY":96,"D3_BOY":64,"D3_MOY":67,"D3_EOY":70,"D4_BOY":60,"D4_MOY":63,"D4_EOY":66,"D5_BOY":87,"D5_MOY":88,"D5_EOY":89,"D6_BOY":93,"D6_MOY":94,"D6_EOY":95},
+{"Student":"Student 89","D1_BOY":63,"D1_MOY":66,"D1_EOY":69,"D2_BOY":93,"D2_MOY":94,"D2_EOY":95,"D3_BOY":87,"D3_MOY":88,"D3_EOY":89,"D4_BOY":91,"D4_MOY":92,"D4_EOY":93,"D5_BOY":88,"D5_MOY":89,"D5_EOY":90,"D6_BOY":100,"D6_MOY":100,"D6_EOY":100},
+{"Student":"Student 74","D1_BOY":64,"D1_MOY":67,"D1_EOY":70,"D2_BOY":80,"D2_MOY":81,"D2_EOY":83,"D3_BOY":62,"D3_MOY":65,"D3_EOY":68,"D4_BOY":72,"D4_MOY":74,"D4_EOY":76,"D5_BOY":95,"D5_MOY":96,"D5_EOY":97,"D6_BOY":79,"D6_MOY":80,"D6_EOY":82},
+{"Student":"Student 91","D1_BOY":64,"D1_MOY":66,"D1_EOY":68,"D2_BOY":74,"D2_MOY":76,"D2_EOY":78,"D3_BOY":94,"D3_MOY":95,"D3_EOY":96,"D4_BOY":85,"D4_MOY":86,"D4_EOY":87,"D5_BOY":87,"D5_MOY":88,"D5_EOY":89,"D6_BOY":62,"D6_MOY":64,"D6_EOY":67},
+{"Student":"Student 7","D1_BOY":65,"D1_MOY":68,"D1_EOY":71,"D2_BOY":69,"D2_MOY":71,"D2_EOY":74,"D3_BOY":75,"D3_MOY":77,"D3_EOY":79,"D4_BOY":75,"D4_MOY":76,"D4_EOY":77,"D5_BOY":84,"D5_MOY":85,"D5_EOY":87,"D6_BOY":75,"D6_MOY":77,"D6_EOY":79},
+{"Student":"Student 95","D1_BOY":65,"D1_MOY":66,"D1_EOY":67,"D2_BOY":98,"D2_MOY":99,"D2_EOY":99,"D3_BOY":90,"D3_MOY":91,"D3_EOY":92,"D4_BOY":86,"D4_MOY":87,"D4_EOY":88,"D5_BOY":63,"D5_MOY":65,"D5_EOY":68,"D6_BOY":60,"D6_MOY":62,"D6_EOY":64},
+{"Student":"Student 3","D1_BOY":66,"D1_MOY":69,"D1_EOY":72,"D2_BOY":74,"D2_MOY":76,"D2_EOY":78,"D3_BOY":83,"D3_MOY":84,"D3_EOY":86,"D4_BOY":79,"D4_MOY":80,"D4_EOY":82,"D5_BOY":80,"D5_MOY":81,"D5_EOY":83,"D6_BOY":64,"D6_MOY":66,"D6_EOY":68},
+{"Student":"Student 23","D1_BOY":66,"D1_MOY":68,"D1_EOY":70,"D2_BOY":94,"D2_MOY":95,"D2_EOY":96,"D3_BOY":88,"D3_MOY":89,"D3_EOY":90,"D4_BOY":94,"D4_MOY":95,"D4_EOY":96,"D5_BOY":85,"D5_MOY":86,"D5_EOY":87,"D6_BOY":65,"D6_MOY":67,"D6_EOY":69},
+{"Student":"Student 25","D1_BOY":66,"D1_MOY":68,"D1_EOY":70,"D2_BOY":91,"D2_MOY":92,"D2_EOY":93,"D3_BOY":70,"D3_MOY":72,"D3_EOY":74,"D4_BOY":93,"D4_MOY":94,"D4_EOY":95,"D5_BOY":99,"D5_MOY":99,"D5_EOY":100,"D6_BOY":100,"D6_MOY":100,"D6_EOY":100},
+{"Student":"Student 92","D1_BOY":66,"D1_MOY":68,"D1_EOY":70,"D2_BOY":91,"D2_MOY":92,"D2_EOY":93,"D3_BOY":82,"D3_MOY":83,"D3_EOY":84,"D4_BOY":100,"D4_MOY":100,"D4_EOY":100,"D5_BOY":66,"D5_MOY":67,"D5_EOY":69,"D6_BOY":99,"D6_MOY":99,"D6_EOY":100},
+{"Student":"Student 94","D1_BOY":66,"D1_MOY":68,"D1_EOY":70,"D2_BOY":74,"D2_MOY":76,"D2_EOY":78,"D3_BOY":98,"D3_MOY":98,"D3_EOY":99,"D4_BOY":61,"D4_MOY":63,"D4_EOY":66,"D5_BOY":77,"D5_MOY":78,"D5_EOY":80,"D6_BOY":66,"D6_MOY":67,"D6_EOY":69},
+{"Student":"Student 30","D1_BOY":67,"D1_MOY":70,"D1_EOY":73,"D2_BOY":82,"D2_MOY":83,"D2_EOY":85,"D3_BOY":83,"D3_MOY":84,"D3_EOY":86,"D4_BOY":79,"D4_MOY":80,"D4_EOY":82,"D5_BOY":66,"D5_MOY":68,"D5_EOY":71,"D6_BOY":93,"D6_MOY":94,"D6_EOY":95},
+{"Student":"Student 44","D1_BOY":67,"D1_MOY":70,"D1_EOY":73,"D2_BOY":85,"D2_MOY":86,"D2_EOY":88,"D3_BOY":76,"D3_MOY":77,"D3_EOY":79,"D4_BOY":93,"D4_MOY":94,"D4_EOY":95,"D5_BOY":95,"D5_MOY":96,"D5_EOY":97,"D6_BOY":82,"D6_MOY":83,"D6_EOY":85},
+{"Student":"Student 57","D1_BOY":67,"D1_MOY":70,"D1_EOY":73,"D2_BOY":75,"D2_MOY":77,"D2_EOY":79,"D3_BOY":78,"D3_MOY":79,"D3_EOY":81,"D4_BOY":77,"D4_MOY":78,"D4_EOY":79,"D5_BOY":84,"D5_MOY":85,"D5_EOY":87,"D6_BOY":76,"D6_MOY":77,"D6_EOY":79},
+{"Student":"Student 68","D1_BOY":69,"D1_MOY":72,"D1_EOY":75,"D2_BOY":87,"D2_MOY":88,"D2_EOY":89,"D3_BOY":61,"D3_MOY":64,"D3_EOY":67,"D4_BOY":81,"D4_MOY":82,"D4_EOY":83,"D5_BOY":70,"D5_MOY":72,"D5_EOY":74,"D6_BOY":96,"D6_MOY":97,"D6_EOY":98},
+{"Student":"Student 69","D1_BOY":69,"D1_MOY":72,"D1_EOY":75,"D2_BOY":83,"D2_MOY":84,"D2_EOY":85,"D3_BOY":76,"D3_MOY":78,"D3_EOY":80,"D4_BOY":70,"D4_MOY":72,"D4_EOY":74,"D5_BOY":94,"D5_MOY":95,"D5_EOY":96,"D6_BOY":70,"D6_MOY":72,"D6_EOY":74},
+{"Student":"Student 11","D1_BOY":70,"D1_MOY":72,"D1_EOY":74,"D2_BOY":100,"D2_MOY":100,"D2_EOY":100,"D3_BOY":85,"D3_MOY":86,"D3_EOY":87,"D4_BOY":61,"D4_MOY":63,"D4_EOY":66,"D5_BOY":67,"D5_MOY":69,"D5_EOY":72,"D6_BOY":91,"D6_MOY":92,"D6_EOY":93},
+{"Student":"Student 70","D1_BOY":71,"D1_MOY":74,"D1_EOY":77,"D2_BOY":88,"D2_MOY":89,"D2_EOY":90,"D3_BOY":94,"D3_MOY":95,"D3_EOY":96,"D4_BOY":84,"D4_MOY":85,"D4_EOY":86,"D5_BOY":81,"D5_MOY":82,"D5_EOY":83,"D6_BOY":93,"D6_MOY":94,"D6_EOY":95},
+{"Student":"Student 78","D1_BOY":71,"D1_MOY":74,"D1_EOY":77,"D2_BOY":77,"D2_MOY":78,"D2_EOY":79,"D3_BOY":84,"D3_MOY":85,"D3_EOY":86,"D4_BOY":83,"D4_MOY":84,"D4_EOY":85,"D5_BOY":64,"D5_MOY":66,"D5_EOY":68,"D6_BOY":70,"D6_MOY":72,"D6_EOY":74},
+{"Student":"Student 82","D1_BOY":71,"D1_MOY":73,"D1_EOY":75,"D2_BOY":85,"D2_MOY":86,"D2_EOY":87,"D3_BOY":92,"D3_MOY":93,"D3_EOY":94,"D4_BOY":89,"D4_MOY":90,"D4_EOY":91,"D5_BOY":71,"D5_MOY":73,"D5_EOY":75,"D6_BOY":75,"D6_MOY":77,"D6_EOY":79},
+{"Student":"Student 77","D1_BOY":72,"D1_MOY":75,"D1_EOY":78,"D2_BOY":80,"D2_MOY":81,"D2_EOY":82,"D3_BOY":83,"D3_MOY":84,"D3_EOY":85,"D4_BOY":78,"D4_MOY":79,"D4_EOY":80,"D5_BOY":76,"D5_MOY":77,"D5_EOY":78,"D6_BOY":64,"D6_MOY":66,"D6_EOY":68},
+{"Student":"Student 16","D1_BOY":73,"D1_MOY":76,"D1_EOY":79,"D2_BOY":88,"D2_MOY":89,"D2_EOY":90,"D3_BOY":88,"D3_MOY":89,"D3_EOY":90,"D4_BOY":78,"D4_MOY":79,"D4_EOY":80,"D5_BOY":91,"D5_MOY":92,"D5_EOY":93,"D6_BOY":90,"D6_MOY":91,"D6_EOY":92},
+{"Student":"Student 29","D1_BOY":73,"D1_MOY":76,"D1_EOY":79,"D2_BOY":75,"D2_MOY":76,"D2_EOY":77,"D3_BOY":70,"D3_MOY":71,"D3_EOY":72,"D4_BOY":61,"D4_MOY":63,"D4_EOY":65,"D5_BOY":96,"D5_MOY":97,"D5_EOY":98,"D6_BOY":97,"D6_MOY":98,"D6_EOY":99},
+{"Student":"Student 80","D1_BOY":73,"D1_MOY":75,"D1_EOY":77,"D2_BOY":62,"D2_MOY":64,"D2_EOY":66,"D3_BOY":95,"D3_MOY":96,"D3_EOY":97,"D4_BOY":71,"D4_MOY":72,"D4_EOY":73,"D5_BOY":88,"D5_MOY":89,"D5_EOY":90,"D6_BOY":82,"D6_MOY":83,"D6_EOY":84},
+{"Student":"Student 52","D1_BOY":74,"D1_MOY":77,"D1_EOY":80,"D2_BOY":65,"D2_MOY":67,"D2_EOY":69,"D3_BOY":79,"D3_MOY":80,"D3_EOY":81,"D4_BOY":70,"D4_MOY":72,"D4_EOY":74,"D5_BOY":90,"D5_MOY":91,"D5_EOY":92,"D6_BOY":67,"D6_MOY":69,"D6_EOY":71},
+{"Student":"Student 96","D1_BOY":74,"D1_MOY":76,"D1_EOY":78,"D2_BOY":67,"D2_MOY":69,"D2_EOY":71,"D3_BOY":71,"D3_MOY":72,"D3_EOY":73,"D4_BOY":72,"D4_MOY":73,"D4_EOY":74,"D5_BOY":78,"D5_MOY":79,"D5_EOY":80,"D6_BOY":63,"D6_MOY":65,"D6_EOY":67},
+{"Student":"Student 21","D1_BOY":75,"D1_MOY":78,"D1_EOY":81,"D2_BOY":89,"D2_MOY":90,"D2_EOY":91,"D3_BOY":99,"D3_MOY":99,"D3_EOY":100,"D4_BOY":96,"D4_MOY":97,"D4_EOY":98,"D5_BOY":69,"D5_MOY":71,"D5_EOY":73,"D6_BOY":74,"D6_MOY":76,"D6_EOY":78},
+{"Student":"Student 35","D1_BOY":75,"D1_MOY":77,"D1_EOY":79,"D2_BOY":80,"D2_MOY":81,"D2_EOY":82,"D3_BOY":86,"D3_MOY":87,"D3_EOY":88,"D4_BOY":60,"D4_MOY":62,"D4_EOY":64,"D5_BOY":65,"D5_MOY":67,"D5_EOY":69,"D6_BOY":63,"D6_MOY":65,"D6_EOY":67},
+{"Student":"Student 76","D1_BOY":75,"D1_MOY":78,"D1_EOY":81,"D2_BOY":81,"D2_MOY":82,"D2_EOY":83,"D3_BOY":75,"D3_MOY":77,"D3_EOY":79,"D4_BOY":81,"D4_MOY":82,"D4_EOY":83,"D5_BOY":80,"D5_MOY":81,"D5_EOY":82,"D6_BOY":87,"D6_MOY":88,"D6_EOY":89},
+{"Student":"Student 36","D1_BOY":76,"D1_MOY":78,"D1_EOY":80,"D2_BOY":82,"D2_MOY":83,"D2_EOY":84,"D3_BOY":90,"D3_MOY":91,"D3_EOY":92,"D4_BOY":88,"D4_MOY":89,"D4_EOY":90,"D5_BOY":76,"D5_MOY":77,"D5_EOY":78,"D6_BOY":62,"D6_MOY":64,"D6_EOY":66},
+{"Student":"Student 12","D1_BOY":77,"D1_MOY":79,"D1_EOY":81,"D2_BOY":88,"D2_MOY":89,"D2_EOY":90,"D3_BOY":65,"D3_MOY":67,"D3_EOY":70,"D4_BOY":98,"D4_MOY":99,"D4_EOY":100,"D5_BOY":96,"D5_MOY":97,"D5_EOY":98,"D6_BOY":93,"D6_MOY":94,"D6_EOY":95},
+{"Student":"Student 4","D1_BOY":79,"D1_MOY":81,"D1_EOY":83,"D2_BOY":79,"D2_MOY":80,"D2_EOY":81,"D3_BOY":80,"D3_MOY":81,"D3_EOY":82,"D4_BOY":90,"D4_MOY":91,"D4_EOY":92,"D5_BOY":65,"D5_MOY":67,"D5_EOY":69,"D6_BOY":78,"D6_MOY":79,"D6_EOY":81},
+{"Student":"Student 14","D1_BOY":79,"D1_MOY":80,"D1_EOY":81,"D2_BOY":79,"D2_MOY":80,"D2_EOY":82,"D3_BOY":62,"D3_MOY":64,"D3_EOY":67,"D4_BOY":84,"D4_MOY":85,"D4_EOY":86,"D5_BOY":63,"D5_MOY":65,"D5_EOY":67,"D6_BOY":80,"D6_MOY":81,"D6_EOY":82},
+{"Student":"Student 81","D1_BOY":79,"D1_MOY":81,"D1_EOY":83,"D2_BOY":95,"D2_MOY":96,"D2_EOY":97,"D3_BOY":98,"D3_MOY":98,"D3_EOY":99,"D4_BOY":81,"D4_MOY":82,"D4_EOY":83,"D5_BOY":61,"D5_MOY":63,"D5_EOY":65,"D6_BOY":70,"D6_MOY":72,"D6_EOY":74}];
+
+let students = JSON.parse(JSON.stringify(RAW_STUDENTS));
+let currentTab = 'heatmap';
+let selectedStudent = 0;
+let currentWindow = config.activeWindow || 'BOY';
+let importTab = 'csv';
+let importedHeaders = [];
+let importedRows = [];
+let columnMapping = {};
+
+// Progress Monitoring: { "StudentName": [ {id, name, baseline, goal, goalDate, tier, notes, points:[{date,score}]} ] }
+let pmData = {};
+try{const s=localStorage.getItem('mtss_pm');if(s)pmData=JSON.parse(s);}catch(e){}
+function savePM(){try{localStorage.setItem('mtss_pm',JSON.stringify(pmData));}catch(e){}}
+
+let pmSelectedStudent = '';
+let pmEditingTrack = null; // track id being edited for add-point
+
+// ============================================================
+// STATISTICS ENGINE
+// ============================================================
+function mean(arr){return arr.length===0?0:arr.reduce((a,b)=>a+b,0)/arr.length}
+function stddev(arr){if(arr.length===0)return 0;const m=mean(arr);return Math.sqrt(arr.reduce((s,x)=>s+(x-m)**2,0)/arr.length)}
+function zScore(val,m,sd){return sd===0?0:(val-m)/sd}
+function fmt(n,d=2){return isNaN(n)?'—':Number(n).toFixed(d)}
+
+function getScore(student, domain, window){
+  const key = `${domain}_${window}`;
+  const v = student[key];
+  return (v===undefined||v===null||isNaN(v)) ? null : Number(v);
+}
+
+function availableWindows(){
+  // Determine which windows have any data
+  return WINDOWS.filter(w => students.some(s => DOMAINS.some(d => getScore(s,d,w)!==null)));
+}
+
+function computeStats(win){
+  win = win || currentWindow;
+  // For each domain, collect valid scores
+  const cohortStats = {};
+  DOMAINS.forEach(d => {
+    const vals = students.map(s => getScore(s,d,win)).filter(v => v!==null);
+    cohortStats[d] = {mean: mean(vals), sd: stddev(vals), count: vals.length};
+  });
+
+  return students.map(s => {
+    const scores = DOMAINS.map(d => getScore(s,d,win)).filter(v=>v!==null);
+    const sMean = mean(scores);
+    const sSd = stddev(scores);
+    const result = {name: s.Student};
+    DOMAINS.forEach(d => {
+      const score = getScore(s,d,win);
+      if(score === null){
+        result[d] = {score:null, cohortZ:null, bmZ:null, profileZ:null};
+        return;
+      }
+      const cm = cohortStats[d].mean;
+      const csd = cohortStats[d].sd;
+      const bm = getBenchmark(d, win);
+      result[d] = {
+        score,
+        cohortZ: zScore(score, cm, csd),
+        bmZ: zScore(score, bm, csd),
+        profileZ: zScore(score, sMean, sSd)
+      };
+    });
+    const validZs = DOMAINS.map(d=>result[d].cohortZ).filter(z=>z!==null);
+    let minZ = validZs.length ? Math.min(...validZs) : 0;
+    let weakest = DOMAINS.find(d=>result[d].cohortZ===minZ) || 'D1';
+    result.weakest = weakest;
+    result.minZ = minZ;
+    result.isFlagged = minZ < -1.0;
+    return result;
+  });
+}
+
+function getBenchmark(domain, win){
+  const bms = config.benchmarks[domain];
+  if(!bms) return 75;
+  if(typeof bms === 'object' && bms[win]!==undefined) return bms[win];
+  if(typeof bms === 'number') return bms;
+  return 75;
+}
+
+// ============================================================
+// STATUS HELPERS
+// ============================================================
+function cohortStatusLabel(z){
+  if(z===null)return'—';
+  if(z<-1.5)return'CRITICAL';if(z<-1.0)return'FLAGGED';if(z<-0.5)return'WATCH';if(z>=1.0)return'STRENGTH';return'Typical';
+}
+function bmStatusLabel(z){
+  if(z===null)return'—';
+  if(z<-1.5)return'CRITICAL';if(z<-1.0)return'FLAGGED';if(z<-0.5)return'WATCH';if(z>=0)return'At/Above';return'Typical';
+}
+function statusClass(label){
+  const m={CRITICAL:'badge-critical',FLAGGED:'badge-flagged',WATCH:'badge-watch',Typical:'badge-typical',STRENGTH:'badge-strength','At/Above':'badge-above'};
+  return m[label]||'badge-typical';
+}
+function zCellClass(z){
+  if(z===null)return'z-typical';
+  if(z<-1.5)return'z-critical';if(z<-1.0)return'z-flagged';if(z<-0.5)return'z-watch';if(z>=1.0)return'z-strength';return'z-typical';
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function switchTab(tab){
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    const tabs = ['heatmap','profile','priority','domain','pm','data','settings'];
+    b.classList.toggle('active', tabs[i]===tab);
+  });
+  render();
+}
+
+function switchWindow(win){
+  currentWindow = win;
+  config.activeWindow = win;
+  saveConfigToStorage();
+  render();
+}
+
+function switchImportTab(t){
+  importTab = t;
+  render();
+}
+
+// ============================================================
+// RENDER ROUTER
+// ============================================================
+function render(){
+  const el = document.getElementById('main-panel');
+  if(!el) return;
+  if(currentTab==='heatmap') el.innerHTML = renderHeatmap();
+  else if(currentTab==='profile') el.innerHTML = renderProfile();
+  else if(currentTab==='priority') el.innerHTML = renderPriority();
+  else if(currentTab==='domain') el.innerHTML = renderDomain();
+  else if(currentTab==='pm') el.innerHTML = renderPM();
+  else if(currentTab==='data') el.innerHTML = renderData();
+  else if(currentTab==='settings') el.innerHTML = renderSettings();
+  bindEvents();
+}
+
+// ============================================================
+// WINDOW TOGGLE UI
+// ============================================================
+function renderWindowToggle(showLabel=true){
+  const available = availableWindows();
+  const wins = WINDOWS.map(w => {
+    const haData = available.includes(w);
+    const isActive = w === currentWindow;
+    return `<button class="win-btn ${isActive?'active':''} ${!haData?'disabled':''}"
+      onclick="${haData?`switchWindow('${w}')`:''}" title="${haData?w:'No data for '+w}">${w}</button>`;
+  }).join('');
+  return `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    ${showLabel?`<span style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">WINDOW:</span>`:''}
+    <div class="window-toggle">${wins}</div>
+  </div>`;
+}
+
+// ============================================================
+// DATA STATUS BAR
+// ============================================================
+function renderDataStatus(){
+  const hasData = students.length > 0;
+  const pmCount = Object.keys(pmData).length;
+  return `<div class="data-status">
+    <div class="data-status-dot ${hasData?'':'empty'}"></div>
+    <span style="color:var(--text2)">${students.length} students loaded</span>
+    <span style="color:var(--border2)">·</span>
+    <span style="color:var(--text3)">Windows: ${availableWindows().join(', ')||'none'}</span>
+    ${pmCount?`<span style="color:var(--border2)">·</span><span style="color:var(--text3)">${pmCount} students with PM tracks</span>`:''}
+  </div>`;
+}
+
+// ============================================================
+// HEATMAP
+// ============================================================
+function renderHeatmap(){
+  const data = computeStats();
+  const sortedData = [...data].sort((a,b)=>a.minZ-b.minZ);
+  const flaggedCount = data.filter(s=>s.isFlagged).length;
+
+  const rows = sortedData.map(s => {
+    const cols = DOMAINS.map(d => {
+      const z = s[d].cohortZ;
+      if(z===null) return `<td class="z-cell z-typical" style="color:var(--text3)">—</td>`;
+      return `<td class="z-cell ${zCellClass(z)}">${fmt(z,2)}</td>`;
+    }).join('');
+    const weakName = config.domainNames[s.weakest];
+    const pmTracks = pmData[s.name]||[];
+    const pmBadge = pmTracks.length ? `<span class="${pmTracks.some(t=>t.tier==3)?'tier-3-badge':'tier-2-badge'}" style="margin-left:4px">PM</span>` : '';
+    return `<tr>
+      <td class="name" style="cursor:pointer;color:#4a9ee0" onclick="gotoStudent('${s.name}')">${s.name}${pmBadge}</td>
+      ${cols}
+      <td class="mono center" style="color:var(--text3)">${weakName}</td>
+      <td class="mono center ${zCellClass(s.minZ)}">${fmt(s.minZ,2)}</td>
+    </tr>`;
+  }).join('');
+
+  const domainHeaders = DOMAINS.map(d=>`<th class="center">${config.domainNames[d]}</th>`).join('');
+
+  return `<div>
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <div class="panel-title">Cohort Z-Score Heatmap</div>
+        <div class="panel-sub">comparing each student to cohort mean · sorted by weakest domain</div>
+      </div>
+      ${renderWindowToggle()}
+    </div>
+    <div class="metric-row">
+      <div class="metric-card"><div class="metric-label">Total Students</div><div class="metric-value">${data.length}</div></div>
+      <div class="metric-card"><div class="metric-label">Flagged (any domain)</div><div class="metric-value" style="color:var(--flagged)">${flaggedCount}</div><div class="metric-sub">${data.length?Math.round(flaggedCount/data.length*100):0}% of cohort</div></div>
+      <div class="metric-card"><div class="metric-label">Critical (z &lt; −1.5)</div><div class="metric-value" style="color:var(--critical)">${data.filter(s=>s.minZ<-1.5).length}</div></div>
+      <div class="metric-card"><div class="metric-label">All Typical</div><div class="metric-value" style="color:var(--strength)">${data.filter(s=>s.minZ>=-0.5).length}</div></div>
+    </div>
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--critical)"></div>Critical (z &lt; −1.5)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--flagged)"></div>Flagged (z &lt; −1.0)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--watch)"></div>Watch (z &lt; −0.5)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#334e7a"></div>Typical</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--strength)"></div>Strength (z &gt; 1.0)</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Student</th>${domainHeaders}<th class="center">Weakest</th><th class="center">Min Z</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// INDIVIDUAL PROFILE
+// ============================================================
+function renderProfile(){
+  const data = computeStats();
+  const sorted = [...data].sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
+  if(selectedStudent>=sorted.length) selectedStudent=0;
+  const s = sorted[selectedStudent];
+
+  const options = sorted.map((st,i) =>
+    `<option value="${i}" ${i===selectedStudent?'selected':''}>${st.name}</option>`).join('');
+
+  // Build domain cards with timeline
+  const domainCards = DOMAINS.map(d => {
+    const info = s[d];
+    if(info.score===null) return `<div class="domain-card"><div class="domain-card-header"><div class="domain-name">${config.domainNames[d]}</div><div style="font-size:12px;color:var(--text3)">No data for ${currentWindow}</div></div></div>`;
+
+    const cLabel = cohortStatusLabel(info.cohortZ);
+    const bLabel = bmStatusLabel(info.bmZ);
+    const pz = info.profileZ;
+    const pLabel = pz>=0.5?'Relative Strength':(pz<=-0.5?'Relative Weakness':'Typical for self');
+    const pClass = pz>=0.5?'badge-strength':(pz<=-0.5?'badge-flagged':'badge-typical');
+
+    const barWidth = Math.abs(info.cohortZ/3*50);
+    const barColor = info.cohortZ<0?'var(--critical)':(info.cohortZ>0?'var(--strength)':'var(--slate2)');
+    const barStyle = info.cohortZ<0
+      ?`left:${50-barWidth}%;width:${barWidth}%;background:${barColor}`
+      :`left:50%;width:${barWidth}%;background:${barColor}`;
+
+    // Build timeline
+    const avail = availableWindows();
+    let timelineHTML = '';
+    if(avail.length > 1){
+      const segments = [];
+      for(let i=0;i<avail.length;i++){
+        const w = avail[i];
+        const sc = getScore(students[sorted[selectedStudent]?students.findIndex(st=>st.Student===s.name):0], d, w);
+        if(sc===null) continue;
+        segments.push({w, sc});
+      }
+      const parts = segments.map((seg,i) => {
+        let arrowHTML = '';
+        if(i>0){
+          const delta = seg.sc - segments[i-1].sc;
+          const dir = delta>0?'up':delta<0?'down':'';
+          const arrow = delta>0?'↑':delta<0?'↓':'→';
+          arrowHTML = `<div class="timeline-arrow ${dir}">${arrow}<div class="timeline-delta ${delta>0?'pos':delta<0?'neg':''}">${delta>0?'+':''}${delta}</div></div>`;
+        }
+        return `${arrowHTML}<div class="timeline-win">
+          <div class="timeline-label">${seg.w}</div>
+          <div class="timeline-score" style="color:${seg.w===currentWindow?'var(--text)':'var(--text3)'}">${seg.sc}</div>
+        </div>`;
+      }).join('');
+      timelineHTML = `<div class="timeline-wrap">${parts}</div>`;
+    }
+
+    return `<div class="domain-card">
+      <div class="domain-card-header">
+        <div class="domain-name">${config.domainNames[d]}</div>
+        <div class="domain-score">${info.score}</div>
+      </div>
+      <div class="domain-rows">
+        <div class="domain-row">
+          <span class="domain-row-label">vs cohort</span>
+          <div class="domain-row-val"><span class="z-number">${fmt(info.cohortZ,2)}</span><span class="badge ${statusClass(cLabel)}">${cLabel}</span></div>
+        </div>
+        <div class="domain-row">
+          <span class="domain-row-label">vs benchmark (${getBenchmark(d,currentWindow)})</span>
+          <div class="domain-row-val"><span class="z-number">${fmt(info.bmZ,2)}</span><span class="badge ${statusClass(bLabel)}">${bLabel}</span></div>
+        </div>
+        <div class="domain-row">
+          <span class="domain-row-label">within profile</span>
+          <div class="domain-row-val"><span class="z-number">${fmt(pz,2)}</span><span class="badge ${pClass}">${pLabel}</span></div>
+        </div>
+      </div>
+      <div class="z-bar-wrap">
+        <div class="z-bar-label">${fmt(info.cohortZ,1)}</div>
+        <div class="z-bar-track"><div class="z-bar-center"></div><div class="z-bar-fill" style="${barStyle}"></div></div>
+      </div>
+      ${timelineHTML}
+    </div>`;
+  }).join('');
+
+  const maxScore = 100;
+  const barRows = DOMAINS.map(d => {
+    const score = s[d].score;
+    if(score===null) return `<div class="domain-bar-row"><div class="domain-bar-label">${d}</div><div class="domain-bar-outer"></div><div class="domain-bar-val">—</div></div>`;
+    const bm = getBenchmark(d, currentWindow);
+    const pct = score/maxScore*100;
+    const bmPct = bm/maxScore*100;
+    const z = s[d].cohortZ||0;
+    const barClr = z<-1.5?'var(--critical)':z<-1.0?'var(--flagged)':z<-0.5?'var(--watch)':z>=1.0?'var(--strength)':'var(--slate2)';
+    return `<div class="domain-bar-row">
+      <div class="domain-bar-label">${d}</div>
+      <div class="domain-bar-outer">
+        <div class="domain-bar-student" style="width:${pct}%;background:${barClr}"></div>
+        <div class="domain-bar-bm" style="left:${bmPct}%"></div>
+      </div>
+      <div class="domain-bar-val">${score}</div>
+    </div>`;
+  }).join('');
+
+  const flaggedDomains = DOMAINS.filter(d=>s[d].cohortZ!==null&&s[d].cohortZ<-1.0).map(d=>config.domainNames[d]);
+  const strengthDomains = DOMAINS.filter(d=>s[d].profileZ!==null&&s[d].profileZ>=0.5).map(d=>config.domainNames[d]);
+  const pmTracks = pmData[s.name]||[];
+
+  return `<div>
+    <div class="profile-select-wrap">
+      <label>Select Student:</label>
+      <select id="student-select" onchange="selectedStudent=parseInt(this.value);render()">${options}</select>
+      <div class="profile-name" style="margin-left:12px">${s.name}</div>
+      ${flaggedDomains.length?`<span class="badge badge-flagged">${flaggedDomains.length} domain${flaggedDomains.length>1?'s':''} flagged</span>`:''}
+      ${pmTracks.length?`<span class="tier-${pmTracks.some(t=>t.tier==3)?'3':'2'}-badge">PM Tier ${pmTracks.some(t=>t.tier==3)?'3':'2'}</span>`:''}
+      <button class="btn btn-sm" style="margin-left:auto" onclick="gotoPM('${s.name}')">Manage Progress Monitoring</button>
+      ${renderWindowToggle(false)}
+    </div>
+
+    <div class="callout">
+      <strong>Reading this profile:</strong> Cohort Z shows performance vs peers. Benchmark Z shows performance vs the ${currentWindow} target. Within Profile Z reveals personal strengths and weaknesses.
+      ${strengthDomains.length?`<br><strong>Relative strengths:</strong> ${strengthDomains.join(', ')} — consider leveraging in instruction.`:''}
+    </div>
+
+    <div style="margin-bottom:20px">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px;font-family:var(--font-mono)">RAW SCORE vs BENCHMARK (blue line) — ${currentWindow}</div>
+      ${barRows}
+    </div>
+    <div class="profile-grid">${domainCards}</div>
+  </div>`;
+}
+
+// ============================================================
+// PRIORITY LIST
+// ============================================================
+function renderPriority(){
+  const data = computeStats();
+  const flagged = data.filter(s=>s.isFlagged).sort((a,b)=>a.minZ-b.minZ);
+
+  const domainHeaders = DOMAINS.map(d=>`<th class="center">${config.domainNames[d]}<br><span style="font-weight:400;color:var(--text3);font-size:10px">Cohort Z</span></th>`).join('');
+  const bmHeaders = DOMAINS.map(d=>`<th class="center">${config.domainNames[d]}<br><span style="font-weight:400;color:var(--text3);font-size:10px">BM Z</span></th>`).join('');
+
+  const rows = flagged.map((s,i) => {
+    const cCols = DOMAINS.map(d => {
+      const z = s[d].cohortZ;
+      if(z===null) return `<td class="z-cell z-typical">—</td>`;
+      return `<td class="z-cell ${zCellClass(z)}">${fmt(z,2)}</td>`;
+    }).join('');
+    const bCols = DOMAINS.map(d => {
+      const z = s[d].bmZ;
+      if(z===null) return `<td class="z-cell z-typical">—</td>`;
+      return `<td class="z-cell ${zCellClass(z)}">${fmt(z,2)}</td>`;
+    }).join('');
+    const wLabel = cohortStatusLabel(s.minZ);
+    const pmTracks = pmData[s.name]||[];
+    const pmBadge = pmTracks.length ? `<span class="${pmTracks.some(t=>t.tier==3)?'tier-3-badge':'tier-2-badge'}" style="margin-left:4px">PM T${pmTracks.some(t=>t.tier==3)?'3':'2'}</span>` : '';
+    return `<tr>
+      <td class="center"><span class="rank-badge">${i+1}</span></td>
+      <td class="name" style="cursor:pointer" onclick="gotoStudent('${s.name}')"><span style="color:#4a9ee0">${s.name}</span>${pmBadge}</td>
+      <td class="mono center">${config.domainNames[s.weakest]}</td>
+      <td class="center"><span class="badge ${statusClass(wLabel)}">${fmt(s.minZ,2)}</span></td>
+      ${cCols}${bCols}
+    </tr>`;
+  }).join('');
+
+  return `<div>
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <div class="panel-title">Priority List</div>
+        <div class="panel-sub">students flagged on any domain · cohort z &lt; −1.0 · sorted by severity</div>
+      </div>
+      ${renderWindowToggle()}
+    </div>
+    <div class="metric-row">
+      <div class="metric-card"><div class="metric-label">Flagged Students</div><div class="metric-value" style="color:var(--flagged)">${flagged.length}</div><div class="metric-sub">of ${data.length} total</div></div>
+      <div class="metric-card"><div class="metric-label">Critical Priority</div><div class="metric-value" style="color:var(--critical)">${flagged.filter(s=>s.minZ<-1.5).length}</div><div class="metric-sub">z &lt; −1.5</div></div>
+      <div class="metric-card"><div class="metric-label">Multi-domain flags</div><div class="metric-value">${flagged.filter(s=>DOMAINS.filter(d=>s[d].cohortZ!==null&&s[d].cohortZ<-1.0).length>1).length}</div></div>
+      <div class="metric-card"><div class="metric-label">On PM</div><div class="metric-value" style="color:#a0a0f4">${flagged.filter(s=>(pmData[s.name]||[]).length>0).length}</div></div>
+    </div>
+    <div class="callout">Click a student name to view their full individual profile. Blue columns = cohort z-scores vs peers. Green columns = benchmark z-scores vs target.</div>
+    <div class="table-wrap scroll-x">
+      <table>
+        <thead><tr><th>#</th><th>Student</th><th>Weakest Domain</th><th>Severity</th>${domainHeaders}${bmHeaders}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// DOMAIN SUMMARY
+// ============================================================
+function renderDomain(){
+  const avail = availableWindows();
+
+  const domainCards = DOMAINS.map(d => {
+    const bm = getBenchmark(d, currentWindow);
+    const allScores = students.map(s=>getScore(s,d,currentWindow)).filter(v=>v!==null);
+    if(!allScores.length) return `<div class="tier-card"><div class="tier-card-head"><div class="tier-title">${config.domainNames[d]}</div></div><p style="font-size:12px;color:var(--text3)">No data for ${currentWindow}</p></div>`;
+
+    const cohortAvg = mean(allScores);
+    const belowBM = allScores.filter(s=>s<bm);
+    const pctBelow = belowBM.length/allScores.length;
+    const isConcern = pctBelow > 0.2;
+    const avgBelowScore = belowBM.length ? mean(belowBM) : 0;
+    const csd = stddev(allScores);
+    const avgBmZ = belowBM.length ? mean(belowBM.map(sc=>zScore(sc,bm,csd))) : 0;
+    const fillColor = isConcern?'var(--flagged)':'var(--strength)';
+
+    // Window comparison
+    let winCompare = '';
+    if(avail.length > 1){
+      const compareParts = avail.map(w => {
+        const wScores = students.map(s=>getScore(s,d,w)).filter(v=>v!==null);
+        if(!wScores.length) return '';
+        const wAvg = mean(wScores);
+        return `<div class="win-compare-item">
+          <div class="win-compare-label">${w}</div>
+          <div class="win-compare-val" style="color:${w===currentWindow?'var(--text)':'var(--text2)'}">${wAvg.toFixed(1)}</div>
+        </div>`;
+      }).filter(Boolean).join('');
+      winCompare = `<div style="margin-top:10px"><div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:6px">COHORT AVG BY WINDOW</div><div class="win-compare">${compareParts}</div></div>`;
+    }
+
+    return `<div class="tier-card ${isConcern?'concern':''}">
+      <div class="tier-card-head">
+        <div class="tier-title">${config.domainNames[d]}</div>
+        <div class="${isConcern?'tier-concern-badge':'tier-ok-badge'}">${isConcern?'Review Tier 1':'Tier 1 OK'}</div>
+      </div>
+      <div class="tier-stats">
+        <div class="tier-stat">
+          <div class="tier-stat-val" style="color:${isConcern?'var(--flagged)':'var(--strength)'}">${Math.round(pctBelow*100)}%</div>
+          <div class="tier-stat-label">below benchmark</div>
+        </div>
+        <div class="tier-stat">
+          <div class="tier-stat-val">${fmt(cohortAvg,1)}</div>
+          <div class="tier-stat-label">cohort avg</div>
+        </div>
+        <div class="tier-stat">
+          <div class="tier-stat-val">${bm}</div>
+          <div class="tier-stat-label">benchmark (${currentWindow})</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px;font-family:var(--font-mono)">% below benchmark</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pctBelow*100}%;background:${fillColor}"></div></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;font-family:var(--font-mono)">${belowBM.length} students below · avg score: ${fmt(avgBelowScore,1)} · avg BM z: ${fmt(avgBmZ,2)}</div>
+      ${winCompare}
+    </div>`;
+  }).join('');
+
+  return `<div>
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <div class="panel-title">Domain Summary — Tier 1 Analysis</div>
+        <div class="panel-sub">benchmark-based analysis · &gt;20% below = examine Tier 1 quality and fidelity</div>
+      </div>
+      ${renderWindowToggle()}
+    </div>
+    <div class="callout">
+      <strong>Why benchmark-based?</strong> Comparing students to each other always puts ~50% below average by definition. Comparing to a benchmark tells you whether core instruction is reaching kids.
+      The <strong>80% rule:</strong> if more than 20% of a grade is below benchmark on a domain, examine curriculum, pacing, and fidelity before adding individual interventions.
+    </div>
+    <div class="domain-summary-grid">${domainCards}</div>
+  </div>`;
+}
+
+// ============================================================
+// PROGRESS MONITORING
+// ============================================================
+function gotoPM(name){
+  pmSelectedStudent = name;
+  switchTab('pm');
+}
+
+function renderPM(){
+  const studentNames = students.map(s=>s.Student).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  if(!pmSelectedStudent && studentNames.length) pmSelectedStudent = studentNames[0];
+
+  const selectOpts = studentNames.map(n=>`<option value="${n}" ${n===pmSelectedStudent?'selected':''}>${n}</option>`).join('');
+
+  const tracks = pmData[pmSelectedStudent]||[];
+  const pmTracks = tracks.length ? tracks.map(t=>renderPMTrack(t)).join('') :
+    `<div class="callout">No progress monitoring tracks yet for this student. Click "Add New Track" to begin.</div>`;
+
+  // PM Summary table at bottom if PM data exists
+  const allPMStudents = Object.entries(pmData).filter(([,tracks])=>tracks.length>0);
+  let summaryHTML = '';
+  if(allPMStudents.length > 0){
+    const summaryRows = allPMStudents.flatMap(([name, tracks]) =>
+      tracks.map(t => {
+        const pts = t.points||[];
+        const lastPt = pts[pts.length-1];
+        const onTrack = lastPt ? isOnTrack(t, lastPt.date, lastPt.score) : null;
+        const pctGoal = t.goal && t.baseline!==undefined && lastPt ? Math.round((lastPt.score - t.baseline)/(t.goal - t.baseline)*100) : 0;
+        return `<tr>
+          <td class="name" style="cursor:pointer;color:#4a9ee0" onclick="gotoPM('${name}')">${name}</td>
+          <td>${t.name}</td>
+          <td class="center"><span class="${t.tier==3?'tier-3-badge':'tier-2-badge'}">Tier ${t.tier}</span></td>
+          <td class="mono center">${lastPt?lastPt.score:'—'}</td>
+          <td class="mono center">${t.goal||'—'}</td>
+          <td class="mono center">${lastPt?pctGoal+'%':'—'}</td>
+          <td class="center">${onTrack===null?'<span style="color:var(--text3)">No data</span>':onTrack?'<span class="pm-status-on">✓ On Track</span>':'<span class="pm-status-off">✗ Needs Attn</span>'}</td>
+        </tr>`;
+      })
+    ).join('');
+    summaryHTML = `<div style="margin-top:32px">
+      <div style="font-size:16px;font-weight:500;color:var(--text);margin-bottom:12px">All PM Students</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Student</th><th>Track</th><th>Tier</th><th class="center">Current</th><th class="center">Goal</th><th class="center">% of Goal</th><th class="center">Status</th></tr></thead>
+          <tbody>${summaryRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  return `<div>
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <div class="panel-title">Progress Monitoring</div>
+        <div class="panel-sub">tier 2 & 3 students · frequent probe data · goal line tracking</div>
+      </div>
+    </div>
+    <div class="pm-student-header">
+      <label style="font-size:12px;color:var(--text3);font-family:var(--font-mono)">Select Student:</label>
+      <select id="pm-student-select" onchange="pmSelectedStudent=this.value;render()">${selectOpts}</select>
+      <div style="font-size:18px;font-weight:500;color:var(--text);margin-left:8px;flex:1">${pmSelectedStudent}</div>
+      <button class="btn btn-primary" onclick="addPMTrack()">+ Add New Track</button>
+    </div>
+    <div class="pm-tracks">${pmTracks}</div>
+    ${summaryHTML}
+  </div>`;
+}
+
+function isOnTrack(track, dateStr, score){
+  if(!track.goalDate||track.baseline===undefined||!track.goal) return null;
+  const start = new Date(track.startDate||track.points[0]?.date||dateStr);
+  const goal = new Date(track.goalDate);
+  const current = new Date(dateStr);
+  const totalDays = (goal - start)/86400000;
+  const elapsed = (current - start)/86400000;
+  if(totalDays<=0||elapsed<0) return null;
+  const expected = track.baseline + (track.goal - track.baseline)*(elapsed/totalDays);
+  return score >= expected;
+}
+
+function linReg(points){
+  if(points.length<2) return null;
+  const n = points.length;
+  const xs = points.map((_,i)=>i);
+  const ys = points.map(p=>p.score);
+  const mx = mean(xs), my = mean(ys);
+  const num = xs.reduce((s,x,i)=>s+(x-mx)*(ys[i]-my),0);
+  const den = xs.reduce((s,x)=>s+(x-mx)**2,0);
+  if(den===0) return null;
+  const slope = num/den;
+  const intercept = my - slope*mx;
+  return {slope, intercept};
+}
+
+function renderPMTrack(track){
+  const pts = track.points||[];
+  const reg = linReg(pts);
+
+  // Build SVG chart
+  const W=500, H=140, pad={l:36,r:16,t:12,b:24};
+  let chartHTML = '';
+  if(pts.length>0){
+    const scores = pts.map(p=>p.score);
+    const minS = Math.min(...scores, track.baseline||0, track.goal||0)-5;
+    const maxS = Math.max(...scores, track.baseline||0, track.goal||0)+5;
+    const sx = i => pad.l + (W-pad.l-pad.r)*(i/(Math.max(pts.length,2)-1||1));
+    const sy = v => pad.t + (H-pad.t-pad.b)*(1-(v-minS)/(maxS-minS));
+
+    // Grid lines
+    const gridLines = [0,0.25,0.5,0.75,1].map(f=>{
+      const y = pad.t + f*(H-pad.t-pad.b);
+      const v = Math.round(maxS - f*(maxS-minS));
+      return `<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#2a4070" stroke-width="1"/>
+        <text x="${pad.l-4}" y="${y+4}" font-size="9" fill="#6a8ab8" text-anchor="end">${v}</text>`;
+    }).join('');
+
+    // Aim line (goal line from first point to goal)
+    let aimLine = '';
+    if(track.goal&&track.baseline!==undefined){
+      const n = pts.length-1||1;
+      const ax0=sx(0), ay0=sy(track.baseline);
+      const ax1=sx(n), ay1=sy(track.goal);
+      aimLine=`<line x1="${ax0}" y1="${ay0}" x2="${ax1}" y2="${ay1}" stroke="#4a9ee0" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>`;
+    }
+
+    // Trend line
+    let trendLine = '';
+    if(reg && pts.length>=2){
+      const n=pts.length-1;
+      const tx0=sx(0), ty0=sy(reg.intercept);
+      const tx1=sx(n), ty1=sy(reg.slope*n+reg.intercept);
+      trendLine=`<line x1="${tx0}" y1="${ty0}" x2="${tx1}" y2="${ty1}" stroke="#d4b832" stroke-width="1.5" stroke-dasharray="2,3" opacity="0.7"/>`;
+    }
+
+    // Data line
+    const linePoints = pts.map((_,i)=>`${sx(i)},${sy(pts[i].score)}`).join(' ');
+    const dataLine = pts.length>1 ? `<polyline points="${linePoints}" fill="none" stroke="#52c48a" stroke-width="2"/>` : '';
+
+    // Dots colored by on-track status
+    const dots = pts.map((p,i)=>{
+      const onT = isOnTrack(track, p.date, p.score);
+      const clr = onT===null?'#6a8ab8':onT?'#52c48a':'#e05252';
+      return `<circle cx="${sx(i)}" cy="${sy(p.score)}" r="4" fill="${clr}" stroke="${clr}" stroke-width="1"/>`;
+    }).join('');
+
+    // X axis labels (dates)
+    const xLabels = pts.map((p,i)=>{
+      if(pts.length<=6||(i%(Math.ceil(pts.length/6))===0)||i===pts.length-1){
+        const d=new Date(p.date);
+        const label=isNaN(d)?p.date:`${d.getMonth()+1}/${d.getDate()}`;
+        return `<text x="${sx(i)}" y="${H-pad.b+14}" font-size="8" fill="#6a8ab8" text-anchor="middle">${label}</text>`;
+      }
+      return '';
+    }).join('');
+
+    chartHTML = `<svg viewBox="0 0 ${W} ${H}" class="pm-chart-svg">${gridLines}${aimLine}${trendLine}${dataLine}${dots}${xLabels}</svg>`;
+  } else {
+    chartHTML = `<div style="display:flex;align-items:center;justify-content:center;height:140px;color:var(--text3);font-size:12px;font-family:var(--font-mono)">No data points yet — add probes below</div>`;
+  }
+
+  // Stats
+  const lastPt = pts[pts.length-1];
+  const onTrack = lastPt ? isOnTrack(track, lastPt.date, lastPt.score) : null;
+  const statusColor = onTrack===null?'var(--text3)':onTrack?'var(--strength)':'var(--critical)';
+  const statusLabel = onTrack===null?'No data':onTrack?'On Track':'Needs Attention';
+
+  let projected = '—';
+  if(reg && pts.length>=2 && track.goal && track.goalDate){
+    const n = pts.length;
+    const projDays = Math.ceil((new Date(track.goalDate)-new Date(pts[pts.length-1].date))/86400000/7); // roughly in weeks
+    const projScore = Math.round(reg.slope*(n-1+projDays)+reg.intercept);
+    projected = projScore.toString();
+  }
+
+  const roi = reg && pts.length>=2 ? `${reg.slope>=0?'+':''}${reg.slope.toFixed(1)}/probe` : '—';
+
+  const pointRows = pts.slice(-5).map((p,i,arr)=>{
+    const idx = pts.length - arr.length + i;
+    const onT = isOnTrack(track, p.date, p.score);
+    const dot = onT===null?'●':onT?'<span style="color:var(--strength)">●</span>':'<span style="color:var(--critical)">●</span>';
+    return `<tr>
+      <td class="mono center">${dot}</td>
+      <td class="mono">${p.date}</td>
+      <td class="mono center">${p.score}</td>
+      <td class="center"><button class="btn btn-sm btn-danger" onclick="removePMPoint('${pmSelectedStudent}','${track.id}',${idx})">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  const isEditing = pmEditingTrack === track.id;
+
+  return `<div class="pm-track-card" id="pmtrack-${track.id}">
+    <div class="pm-track-header">
+      <div class="pm-track-name">${track.name}</div>
+      <span class="${track.tier==3?'tier-3-badge':'tier-2-badge'}">Tier ${track.tier}</span>
+      <span style="font-size:12px;color:${statusColor};font-family:var(--font-mono);font-weight:500">${statusLabel}</span>
+      <button class="btn btn-sm" onclick="editPMTrack('${track.id}')">${isEditing?'Close':'Edit Goal'}</button>
+      <button class="btn btn-sm btn-danger" onclick="deletePMTrack('${pmSelectedStudent}','${track.id}')">Delete Track</button>
+    </div>
+    ${isEditing ? renderPMTrackEditForm(track) : ''}
+    <div class="pm-chart-wrap">${chartHTML}</div>
+    <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:10px;display:flex;gap:16px">
+      <span><span style="color:#4a9ee0">─ ─</span> Aim line (goal)</span>
+      <span><span style="color:#d4b832">─ ─</span> Trend line</span>
+      <span><span style="color:#52c48a">─</span> Actual data</span>
+    </div>
+    <div class="pm-track-stats">
+      <div class="pm-stat"><div class="pm-stat-label">Baseline</div><div class="pm-stat-val">${track.baseline??'—'}</div></div>
+      <div class="pm-stat"><div class="pm-stat-label">Goal</div><div class="pm-stat-val">${track.goal??'—'}</div><div class="pm-stat-sub">by ${track.goalDate||'—'}</div></div>
+      <div class="pm-stat"><div class="pm-stat-label">Current</div><div class="pm-stat-val">${lastPt?lastPt.score:'—'}</div></div>
+      <div class="pm-stat"><div class="pm-stat-label">Rate of Improvement</div><div class="pm-stat-val" style="font-size:13px">${roi}</div></div>
+      <div class="pm-stat"><div class="pm-stat-label">Projected at Goal Date</div><div class="pm-stat-val" style="font-size:13px">${projected}</div></div>
+    </div>
+    ${pts.length?`<div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:6px">RECENT DATA POINTS</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th class="center">Status</th><th>Date</th><th class="center">Score</th><th class="center">Remove</th></tr></thead>
+        <tbody>${pointRows}</tbody>
+      </table></div>
+    </div>`:''}
+    <div class="pm-add-point">
+      <div class="settings-field">
+        <label>Probe Date</label>
+        <input type="date" id="pm-date-${track.id}" value="${new Date().toISOString().split('T')[0]}">
+      </div>
+      <div class="settings-field">
+        <label>Score</label>
+        <input type="number" id="pm-score-${track.id}" placeholder="e.g. 82" min="0">
+      </div>
+      <button class="btn btn-primary" style="margin-top:18px" onclick="addPMPoint('${pmSelectedStudent}','${track.id}')">+ Add Data Point</button>
+    </div>
+    ${track.notes?`<div style="font-size:11px;color:var(--text3);margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"><strong style="color:var(--text2)">Notes:</strong> ${track.notes}</div>`:''}
+  </div>`;
+}
+
+function renderPMTrackEditForm(track){
+  return `<div style="background:var(--surface3);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+    <div class="settings-field"><label>Track Name</label><input type="text" id="pme-name-${track.id}" value="${track.name}"></div>
+    <div class="settings-field"><label>Baseline</label><input type="number" id="pme-base-${track.id}" value="${track.baseline??''}"></div>
+    <div class="settings-field"><label>Goal Score</label><input type="number" id="pme-goal-${track.id}" value="${track.goal??''}"></div>
+    <div class="settings-field"><label>Goal Date</label><input type="date" id="pme-date-${track.id}" value="${track.goalDate||''}"></div>
+    <div class="settings-field"><label>Tier</label><select id="pme-tier-${track.id}" style="margin:0"><option value="2" ${track.tier==2?'selected':''}>Tier 2</option><option value="3" ${track.tier==3?'selected':''}>Tier 3</option></select></div>
+    <div class="settings-field"><label>Notes</label><input type="text" id="pme-notes-${track.id}" value="${track.notes||''}"></div>
+    <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="savePMTrackEdit('${track.id}')">Save Changes</button></div>
+  </div>`;
+}
+
+// ============================================================
+// DATA INPUT
+// ============================================================
+function renderData(){
+  const tabs = [
+    {id:'csv', label:'Paste CSV'},
+    {id:'file', label:'Upload File (CSV/Excel)'},
+    {id:'sheets', label:'Google Sheets URL'}
+  ];
+  const tabButtons = tabs.map(t=>
+    `<button class="import-tab-btn ${importTab===t.id?'active':''}" onclick="switchImportTab('${t.id}')">${t.label}</button>`
+  ).join('');
+
+  let content = '';
+  if(importTab==='csv'){
+    content = `<div class="import-section-title">Paste CSV Data</div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.6">Paste CSV below. First row must be headers. Need Student/Name column plus score columns.</p>
+      <div class="csv-example" style="font-family:var(--font-mono);font-size:11px;background:var(--surface3);border:1px solid var(--border);border-radius:5px;padding:10px;color:var(--text3);margin-bottom:10px;overflow-x:auto;white-space:pre">Student,ORF_BOY,ORF_MOY,Math_BOY,Math_MOY
+Emma Johnson,82,90,75,81
+Marcus Lee,61,65,58,63</div>
+      <textarea id="csv-input" rows="8" placeholder="Paste CSV here..."></textarea>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="parseCSVPaste()">Parse & Map Columns →</button>
+        <button class="btn" onclick="loadSampleData()">Load Sample Data</button>
+        <button class="btn" onclick="downloadTemplate()">Download Template</button>
+      </div>`;
+  } else if(importTab==='file'){
+    content = `<div class="import-section-title">Upload CSV or Excel File</div>
+      <div class="drop-zone" id="drop-zone" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleFileDrop(event)">
+        <input type="file" id="file-input" accept=".csv,.xlsx,.xls" onchange="handleFileInput(event)">
+        <div class="drop-zone-icon">📂</div>
+        <div class="drop-zone-text">Drop CSV or Excel file here, or click to browse</div>
+        <div class="drop-zone-sub">Supports .csv, .xlsx, .xls</div>
+      </div>`;
+  } else {
+    const saved = localStorage.getItem('mtss_sheets_url')||'';
+    content = `<div class="import-section-title">Google Sheets URL</div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.6">Paste the URL of a publicly shared Google Sheet. The sheet will be fetched as CSV.</p>
+      <div class="sheets-wrap">
+        <div class="settings-field">
+          <label>Google Sheets URL</label>
+          <input type="text" id="sheets-url" placeholder="https://docs.google.com/spreadsheets/d/..." value="${saved}">
+        </div>
+        <button class="btn btn-primary" onclick="fetchGoogleSheets()">Fetch Data →</button>
+      </div>
+      <p style="font-size:11px;color:var(--text3)">The sheet must be set to "Anyone with the link can view." URL can include /edit or /pub.</p>`;
+  }
+
+  // Column mapper (shows if headers parsed)
+  let mapperHTML = '';
+  if(importedHeaders.length > 0){
+    mapperHTML = renderColumnMapper();
+  }
+
+  // Current data
+  let currentDataHTML = '';
+  if(students.length > 0){
+    const preview = students.slice(0,3).map(s=>{
+      const cells = DOMAINS.map(d=>`<td class="mono center">${getScore(s,d,currentWindow)??'—'}</td>`).join('');
+      return `<tr><td class="name">${s.Student}</td>${cells}</tr>`;
+    }).join('');
+    currentDataHTML = `<div class="settings-section" style="margin-top:20px">
+      <div class="settings-title">Current Data (${students.length} students)</div>
+      <div class="callout callout-success"><strong>${students.length} students</strong> loaded · Windows available: ${availableWindows().join(', ')||'BOY only'}</div>
+      <div class="table-wrap preview-table-wrap">
+        <table><thead><tr><th>Student</th>${DOMAINS.map(d=>`<th class="center">${config.domainNames[d]} (${currentWindow})</th>`).join('')}</tr></thead><tbody>${preview}</tbody></table>
+      </div>
+      <div style="margin-top:12px">
+        <button class="btn btn-danger" onclick="clearData()">Clear All Data</button>
+      </div>
+    </div>`;
+  }
+
+  return `<div>
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <div class="panel-title">Data Input</div>
+        <div class="panel-sub">import student data via CSV, Excel, or Google Sheets</div>
+      </div>
+    </div>
+    ${renderDataStatus()}
+    <div class="import-tabs">${tabButtons}</div>
+    <div class="import-section">${content}</div>
+    ${mapperHTML}
+    ${currentDataHTML}
+  </div>`;
+}
+
+function renderColumnMapper(){
+  // Available target fields
+  const targets = [];
+  targets.push({key:'Student', label:'Student Name'});
+  DOMAINS.forEach(d => {
+    WINDOWS.forEach(w => {
+      targets.push({key:`${d}_${w}`, label:`${config.domainNames[d]} — ${w}`});
+    });
+  });
+
+  const rows = targets.map(t => {
+    const curVal = columnMapping[t.key]||'';
+    const opts = [`<option value="">— skip —</option>`,
+      ...importedHeaders.map(h=>`<option value="${h}" ${h===curVal?'selected':''}>${h}</option>`)
+    ].join('');
+    return `<div class="mapper-row">
+      <div class="mapper-target">${t.label}</div>
+      <div class="mapper-arrow">←</div>
+      <select class="mapper-select" onchange="columnMapping['${t.key}']=this.value">${opts}</select>
+    </div>`;
+  }).join('');
+
+  // Preview table
+  const previewCols = importedHeaders.slice(0,8);
+  const previewRows = importedRows.slice(0,4).map(r=>
+    `<tr>${previewCols.map(c=>`<td class="mono">${r[c]||''}</td>`).join('')}</tr>`
+  ).join('');
+
+  return `<div class="mapper-wrap">
+    <div class="mapper-title">Column Mapper — match your columns to dashboard fields</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Detected ${importedHeaders.length} columns, ${importedRows.length} data rows. Map at least Student Name + one domain score.</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:500">Preview (first 4 rows):</div>
+    <div class="preview-table-wrap"><table>
+      <thead><tr>${previewCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+      <tbody>${previewRows}</tbody>
+    </table></div>
+    <div style="margin:14px 0 10px;font-size:12px;color:var(--text2);font-weight:500">Column Mapping:</div>
+    <div class="mapper-grid">${rows}</div>
+    <div style="margin-top:16px;display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="applyColumnMapping()">Import with This Mapping →</button>
+      <button class="btn" onclick="clearMapper()">Cancel</button>
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function renderSettings(){
+  const bmFields = DOMAINS.map(d => {
+    const winInputs = WINDOWS.map(w => `
+      <div class="settings-field">
+        <label>${config.domainNames[d]} ${w} Benchmark</label>
+        <input type="number" id="bm-${d}-${w}" value="${getBenchmark(d,w)}" min="0" max="999">
+      </div>`).join('');
+    const dnField = `<div class="settings-field">
+        <label>${d} Domain Name</label>
+        <input type="text" id="dn-${d}" value="${config.domainNames[d]}">
+      </div>`;
+    return `<div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:12px;margin-top:4px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">${dnField}${winInputs}</div>`;
+  }).join('');
+
+  const activeWinInputs = WINDOWS.map(w=>
+    `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text2)">
+      <input type="radio" name="active-window" value="${w}" ${currentWindow===w?'checked':''} onchange="currentWindow=this.value;config.activeWindow=this.value"> ${w}
+    </label>`
+  ).join('');
+
+  return `<div>
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <div class="panel-title">Settings</div>
+        <div class="panel-sub">configure benchmarks, domain names, and active window</div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Active Assessment Window</div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Select which window to display by default across all views.</p>
+      <div style="display:flex;gap:20px">${activeWinInputs}</div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Domain Names &amp; Benchmarks by Window</div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Set benchmark targets for each domain for each assessment window (BOY/MOY/EOY benchmarks differ for most assessments).</p>
+      <div style="display:grid;gap:10px">${bmFields}</div>
+      <div style="margin-top:20px;display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="saveConfig()">Save Settings</button>
+        <button class="btn" onclick="resetConfig()">Reset to Defaults</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+function saveConfig(){
+  DOMAINS.forEach(d => {
+    const dnEl = document.getElementById(`dn-${d}`);
+    if(dnEl) config.domainNames[d] = dnEl.value||d;
+    WINDOWS.forEach(w => {
+      const bmEl = document.getElementById(`bm-${d}-${w}`);
+      if(bmEl){
+        if(!config.benchmarks[d]||typeof config.benchmarks[d]==='number') config.benchmarks[d]={BOY:70,MOY:75,EOY:80};
+        config.benchmarks[d][w] = parseFloat(bmEl.value)||75;
+      }
+    });
+  });
+  const activeEl = document.querySelector('input[name="active-window"]:checked');
+  if(activeEl){ currentWindow=activeEl.value; config.activeWindow=activeEl.value; }
+  saveConfigToStorage();
+  showToast('Settings saved.');
+  render();
+}
+
+function resetConfig(){
+  config.benchmarks = JSON.parse(JSON.stringify(DEFAULT_BENCHMARKS));
+  config.domainNames = {...DEFAULT_DOMAIN_NAMES};
+  saveConfigToStorage();
+  render();
+  showToast('Reset to defaults.');
+}
+
+function loadSampleData(){
+  students = JSON.parse(JSON.stringify(RAW_STUDENTS));
+  showToast('Sample data loaded (50 students, BOY/MOY/EOY).');
+  switchTab('heatmap');
+}
+
+function clearData(){
+  if(!confirm('Clear all student data?')) return;
+  students = [];
+  showToast('Data cleared.');
+  render();
+}
+
+function clearMapper(){
+  importedHeaders = [];
+  importedRows = [];
+  columnMapping = {};
+  render();
+}
+
+function gotoStudent(name){
+  const data = computeStats();
+  const sorted = [...data].sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
+  const idx = sorted.findIndex(s=>s.name===name);
+  if(idx>=0){ selectedStudent=idx; switchTab('profile'); }
+}
+
+function exportCSV(){
+  if(!students.length){ showToast('No data to export.'); return; }
+  const data = computeStats();
+  const scoreHeaders = DOMAINS.flatMap(d=>WINDOWS.map(w=>`${config.domainNames[d]}_${w}`));
+  const headers = ['Student',...scoreHeaders,...DOMAINS.map(d=>`${d}_CohortZ_${currentWindow}`),...DOMAINS.map(d=>`${d}_BMZ_${currentWindow}`),'Weakest','MinZ','Flagged'];
+  const rows = data.map(s=>[
+    s.name,
+    ...DOMAINS.flatMap(d=>WINDOWS.map(w=>getScore(students.find(st=>st.Student===s.name),d,w)??'')),
+    ...DOMAINS.map(d=>s[d].cohortZ!==null?fmt(s[d].cohortZ,2):''),
+    ...DOMAINS.map(d=>s[d].bmZ!==null?fmt(s[d].bmZ,2):''),
+    config.domainNames[s.weakest],
+    fmt(s.minZ,2),
+    s.isFlagged?'YES':'NO'
+  ]);
+  const csv = [headers,...rows].map(r=>r.join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='mtss_export.csv'; a.click();
+  showToast('CSV exported.');
+}
+
+function downloadTemplate(){
+  const headers = ['Student',...DOMAINS.flatMap(d=>WINDOWS.map(w=>`${d}_${w}`))];
+  const example = ['Example Student',...DOMAINS.flatMap(d=>WINDOWS.map(()=>'75'))];
+  const csv = [headers, example].map(r=>r.join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='mtss_template.csv'; a.click();
+  showToast('Template downloaded.');
+}
+
+// --- CSV parsing ---
+function parseCSVText(raw){
+  const lines = raw.trim().split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!lines.length) return null;
+  const headers = parseCSVLine(lines[0]);
+  const rows = lines.slice(1).map(l=>{
+    const vals = parseCSVLine(l);
+    const obj = {};
+    headers.forEach((h,i) => { obj[h] = vals[i]||''; });
+    return obj;
+  });
+  return {headers, rows};
+}
+
+function parseCSVLine(line){
+  const result = [];
+  let cur = '', inQ = false;
+  for(let i=0;i<line.length;i++){
+    const c = line[i];
+    if(c==='"'){inQ=!inQ;}
+    else if(c===','&&!inQ){result.push(cur.trim());cur='';}
+    else{cur+=c;}
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function parseCSVPaste(){
+  const raw = document.getElementById('csv-input')?.value?.trim();
+  if(!raw){ showToast('No CSV data.'); return; }
+  const parsed = parseCSVText(raw);
+  if(!parsed){ showToast('Could not parse CSV.'); return; }
+  importedHeaders = parsed.headers;
+  importedRows = parsed.rows;
+  autoDetectMapping();
+  render();
+}
+
+function handleFileDrop(e){
+  e.preventDefault();
+  document.getElementById('drop-zone')?.classList.remove('dragover');
+  const file = e.dataTransfer?.files?.[0];
+  if(file) processFile(file);
+}
+
+function handleFileInput(e){
+  const file = e.target?.files?.[0];
+  if(file) processFile(file);
+}
+
+function processFile(file){
+  const name = file.name.toLowerCase();
+  if(name.endsWith('.csv')){
+    const reader = new FileReader();
+    reader.onload = e => {
+      const parsed = parseCSVText(e.target.result);
+      if(!parsed){ showToast('Could not parse CSV.'); return; }
+      importedHeaders = parsed.headers;
+      importedRows = parsed.rows;
+      autoDetectMapping();
+      render();
+    };
+    reader.readAsText(file);
+  } else if(name.endsWith('.xlsx')||name.endsWith('.xls')){
+    const reader = new FileReader();
+    reader.onload = e => {
+      try{
+        const wb = XLSX.read(e.target.result, {type:'array'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(ws, {header:1});
+        if(!json.length){ showToast('Empty sheet.'); return; }
+        importedHeaders = json[0].map(String);
+        importedRows = json.slice(1).map(row=>{
+          const obj = {};
+          importedHeaders.forEach((h,i) => { obj[h] = row[i]!==undefined?String(row[i]):''; });
+          return obj;
+        });
+        autoDetectMapping();
+        render();
+      }catch(err){ showToast('Error reading Excel: '+err.message); }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    showToast('Please upload a .csv, .xlsx, or .xls file.');
+  }
+}
+
+async function fetchGoogleSheets(){
+  const urlEl = document.getElementById('sheets-url');
+  if(!urlEl){ showToast('URL field not found.'); return; }
+  let url = urlEl.value.trim();
+  if(!url){ showToast('Please enter a Google Sheets URL.'); return; }
+  localStorage.setItem('mtss_sheets_url', url);
+  // Convert to CSV export URL
+  let csvUrl = url;
+  if(url.includes('/edit')){ csvUrl = url.replace(/\/edit.*/,'/export?format=csv'); }
+  else if(url.includes('/pub')){ csvUrl = url.replace(/\/pub.*/,'/export?format=csv'); }
+  else { csvUrl = url + (url.includes('?')?'&':'?') + 'output=csv'; }
+  try{
+    showToast('Fetching...');
+    const res = await fetch(csvUrl);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const text = await res.text();
+    const parsed = parseCSVText(text);
+    if(!parsed){ showToast('Could not parse the sheet.'); return; }
+    importedHeaders = parsed.headers;
+    importedRows = parsed.rows;
+    autoDetectMapping();
+    render();
+  }catch(e){ showToast('Error fetching sheet: '+e.message+'. Make sure the sheet is public.'); }
+}
+
+function autoDetectMapping(){
+  columnMapping = {};
+  // Detect student column
+  const nameCol = importedHeaders.find(h=>/^(student|name|student.?name)/i.test(h));
+  if(nameCol) columnMapping['Student'] = nameCol;
+
+  DOMAINS.forEach(d => {
+    const dName = config.domainNames[d];
+    WINDOWS.forEach(w => {
+      const key = `${d}_${w}`;
+      // Try exact match like D1_BOY, or domain-name_window, or season-based
+      const seasonMap = {BOY:'fall',MOY:'winter',EOY:'spring'};
+      const patterns = [
+        h => h.toUpperCase()===`${d}_${w}`,
+        h => h.toLowerCase()===`${dName.toLowerCase()}_${w.toLowerCase()}`,
+        h => h.toLowerCase()===`${dName.toLowerCase()}_${seasonMap[w]}`,
+        h => new RegExp(`^${d}[_\\s-]?${w}$`,'i').test(h),
+        h => new RegExp(`^${dName}[_\\s-]?${w}$`,'i').test(h),
+        h => new RegExp(`^${dName}[_\\s-]?${seasonMap[w]}$`,'i').test(h),
+      ];
+      const match = importedHeaders.find(h => patterns.some(p => { try{return p(h);}catch{return false;} }));
+      if(match) columnMapping[key] = match;
+    });
+  });
+}
+
+function applyColumnMapping(){
+  const nameCol = columnMapping['Student'];
+  if(!nameCol){ showToast('Please map the Student Name column.'); return; }
+  const newStudents = importedRows.map((row,i) => {
+    const obj = {Student: row[nameCol]||`Student ${i+1}`};
+    DOMAINS.forEach(d => {
+      WINDOWS.forEach(w => {
+        const col = columnMapping[`${d}_${w}`];
+        if(col && row[col]!==undefined && row[col]!==''){
+          obj[`${d}_${w}`] = parseFloat(row[col])||0;
+        }
+      });
+    });
+    return obj;
+  }).filter(s=>s.Student);
+  if(!newStudents.length){ showToast('No valid student rows found.'); return; }
+  students = newStudents;
+  clearMapper();
+  showToast(`Imported ${students.length} students.`);
+  switchTab('heatmap');
+}
+
+// ============================================================
+// PROGRESS MONITORING ACTIONS
+// ============================================================
+function addPMTrack(){
+  if(!pmSelectedStudent){ showToast('Select a student first.'); return; }
+  const id = 'track_'+Date.now();
+  const track = {
+    id, name: 'New Track', baseline: null, goal: null, goalDate: '', tier: 2,
+    startDate: new Date().toISOString().split('T')[0], notes: '', points: []
+  };
+  if(!pmData[pmSelectedStudent]) pmData[pmSelectedStudent]=[];
+  pmData[pmSelectedStudent].push(track);
+  pmEditingTrack = id;
+  savePM();
+  render();
+}
+
+function deletePMTrack(studentName, trackId){
+  if(!confirm('Delete this track and all its data?')) return;
+  pmData[studentName] = (pmData[studentName]||[]).filter(t=>t.id!==trackId);
+  if(!pmData[studentName].length) delete pmData[studentName];
+  savePM();
+  render();
+}
+
+function editPMTrack(trackId){
+  pmEditingTrack = pmEditingTrack===trackId ? null : trackId;
+  render();
+}
+
+function savePMTrackEdit(trackId){
+  const tracks = pmData[pmSelectedStudent]||[];
+  const track = tracks.find(t=>t.id===trackId);
+  if(!track) return;
+  const get = id => document.getElementById(id)?.value;
+  track.name = get(`pme-name-${trackId}`)||track.name;
+  track.baseline = parseFloat(get(`pme-base-${trackId}`))||0;
+  track.goal = parseFloat(get(`pme-goal-${trackId}`))||0;
+  track.goalDate = get(`pme-date-${trackId}`)||'';
+  track.tier = parseInt(get(`pme-tier-${trackId}`))||2;
+  track.notes = get(`pme-notes-${trackId}`)||'';
+  pmEditingTrack = null;
+  savePM();
+  showToast('Track updated.');
+  render();
+}
+
+function addPMPoint(studentName, trackId){
+  const dateEl = document.getElementById(`pm-date-${trackId}`);
+  const scoreEl = document.getElementById(`pm-score-${trackId}`);
+  if(!dateEl||!scoreEl){ showToast('Fields not found.'); return; }
+  const date = dateEl.value;
+  const score = parseFloat(scoreEl.value);
+  if(!date||isNaN(score)){ showToast('Enter a valid date and score.'); return; }
+  const tracks = pmData[studentName]||[];
+  const track = tracks.find(t=>t.id===trackId);
+  if(!track) return;
+  track.points.push({date, score});
+  track.points.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  savePM();
+  scoreEl.value='';
+  showToast(`Data point added: ${score} on ${date}`);
+  render();
+}
+
+function removePMPoint(studentName, trackId, idx){
+  const tracks = pmData[studentName]||[];
+  const track = tracks.find(t=>t.id===trackId);
+  if(!track) return;
+  track.points.splice(idx, 1);
+  savePM();
+  showToast('Data point removed.');
+  render();
+}
+
+// ============================================================
+// EVENTS & TOAST
+// ============================================================
+function bindEvents(){}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// Init
+if(!students.length) students = JSON.parse(JSON.stringify(RAW_STUDENTS));
+render();
+</script>
+</body>
+</html>
