@@ -817,27 +817,25 @@ function renderHeatmap(){
     {key:'typical',  label:'✓ Typical',   desc:'z ≥ −0.5', color:'typical'},
   ];
 
-  // Build domain weakness frequency chart for a tier
+  // Build domain struggle chart for a tier
+  // Shows: what % of students in this tier have a z-score below -0.5 in each domain
   function buildChart(tierStudents, colorKey){
     if(!tierStudents.length) return`<div class="hm-empty">No students in this tier</div>`;
-    const freq = {};
-    DOMAINS.forEach(d=>freq[d]=0);
-    tierStudents.forEach(s=>{ if(s.weakest) freq[s.weakest]=(freq[s.weakest]||0)+1; });
-    const maxFreq = Math.max(...Object.values(freq), 1);
+    const total = tierStudents.length;
     const bars = DOMAINS.map(d=>{
-      const count = freq[d]||0;
-      const pct = (count/maxFreq)*100;
+      const struggling = tierStudents.filter(s => s[d].cohortZ !== null && s[d].cohortZ < -0.5).length;
+      const pct = total > 0 ? (struggling/total)*100 : 0;
       const name = config.domainNames[d];
       return`<div class="hm-bar-row">
         <div class="hm-bar-domain" title="${name}">${name}</div>
         <div class="hm-bar-outer">
           <div class="hm-bar-fill ${colorKey}" style="width:${pct}%"></div>
         </div>
-        <div class="hm-bar-count">${count}</div>
+        <div class="hm-bar-count">${struggling}/${total}</div>
       </div>`;
     }).join('');
     return`<div class="hm-chart-body">
-      <div class="hm-chart-title">Weakest domain distribution — ${tierStudents.length} student${tierStudents.length!==1?'s':''}</div>
+      <div class="hm-chart-title">% of students below threshold (z &lt; −0.5) per domain — ${total} student${total!==1?'s':''}</div>
       ${bars}
     </div>`;
   }
@@ -1026,13 +1024,15 @@ function renderGrowthChart(studentRaw, studentName){
   const idealLine   = buildLine(idealTotals,   CHART_IDEAL,   1.5, '6,3');
   const cohortLine  = buildLine(cohortTotals,  CHART_COHORT,  1.5, '3,3');
 
-  // Anti-overlap label placement
-  // Group all label points by x position, then stagger y offsets
-  const allLabelPts = [...studentLine.labelPts, ...idealLine.labelPts, ...cohortLine.labelPts];
-  // Sort by x then by y
-  allLabelPts.sort((a,b) => a.x - b.x || a.y - b.y);
+  // Per-point labels: for each x column, rank lines top→bottom,
+  // top line labels ABOVE, middle ON (with text-shadow outline), bottom BELOW
+  const allLabelPts = [
+    ...studentLine.labelPts,
+    ...idealLine.labelPts,
+    ...cohortLine.labelPts
+  ];
 
-  // For each x group, spread labels vertically with min 14px gap
+  // Group by x column
   const labelsByX = {};
   allLabelPts.forEach(p => {
     const key = Math.round(p.x);
@@ -1041,56 +1041,75 @@ function renderGrowthChart(studentRaw, studentName){
   });
 
   const labelSVG = Object.values(labelsByX).map(group => {
-    // Sort by y value
+    // Sort top to bottom (lowest y = highest on screen)
     group.sort((a,b) => a.y - b.y);
-    const minGap = 15;
-    // Assign offsets to avoid overlap — push upward from baseline
-    const offsets = group.map(()=> -12); // default above dot
-    for(let i=1;i<group.length;i++){
-      const prevY = group[i-1].y + offsets[i-1];
-      const currY = group[i].y + offsets[i];
-      if(prevY - currY < minGap){
-        offsets[i] = offsets[i] - (minGap - (prevY - currY));
+    const n = group.length;
+    return group.map((p, i) => {
+      let dy, anchor;
+      if(n === 1){
+        dy = -13; anchor = 'middle';
+      } else if(i === 0){
+        // topmost line → label above
+        dy = -13; anchor = 'middle';
+      } else if(i === n-1){
+        // bottommost line → label below
+        dy = 18; anchor = 'middle';
+      } else {
+        // middle → on the line, use paint-order stroke for outline
+        dy = 4; anchor = 'middle';
       }
-    }
-    return group.map((p,i) =>
-      `<text x="${p.x}" y="${p.y + offsets[i]}" font-size="10" fill="${p.stroke}" text-anchor="middle" font-family="IBM Plex Mono" font-weight="600">${Math.round(p.v)}</text>`
-    ).join('');
+      const isMiddle = n > 1 && i > 0 && i < n-1;
+      if(isMiddle){
+        // Outlined text for middle line readability
+        return `<text x="${p.x}" y="${p.y + dy}" font-size="11" fill="${p.stroke}"
+          text-anchor="${anchor}" font-family="IBM Plex Mono" font-weight="700"
+          paint-order="stroke" stroke="var(--surface)" stroke-width="3" stroke-linejoin="round"
+          >${Math.round(p.v)}</text>`;
+      }
+      return `<text x="${p.x}" y="${p.y + dy}" font-size="11" fill="${p.stroke}"
+        text-anchor="${anchor}" font-family="IBM Plex Mono" font-weight="700"
+        >${Math.round(p.v)}</text>`;
+    }).join('');
   }).join('');
 
-  // Right-side legend labels (end of line annotations)
-  function endLabel(totals, stroke, label, pct){
+  // Right-side rate labels with connector lines to line endpoints
+  // Get last valid point for each line
+  function lastPt(totals){
     const valid = totals.map((v,i)=>v!==null?{v,i}:null).filter(Boolean);
-    if(!valid.length) return'';
-    const last = valid[valid.length-1];
-    const x = xOf(last.i) + chartW/(allWins.length-1||1) * 0.15 + pad.l - xOf(last.i) + xOf(last.i) + 10;
-    const y = yOf(last.v);
-    const pctStr = pct !== null ? ` (${fmtPct(pct)})` : '';
-    return `<text x="${W-pad.r+8}" y="${y+4}" font-size="10" fill="${stroke}" font-family="IBM Plex Mono" font-weight="600" opacity="0.9">${label}${pctStr}</text>`;
+    return valid.length ? valid[valid.length-1] : null;
   }
-
-  // Stagger end labels to avoid overlap
-  const endData = [
+  const endItems = [
     {totals:studentTotals, stroke:CHART_STUDENT, label:'Student', pct:studentPct},
     {totals:idealTotals,   stroke:CHART_IDEAL,   label:'Ideal',   pct:idealPct},
     {totals:cohortTotals,  stroke:CHART_COHORT,  label:'Class',   pct:cohortPct},
   ].map(e => {
-    const valid = e.totals.map((v,i)=>v!==null?{v,i}:null).filter(Boolean);
-    if(!valid.length) return null;
-    const last = valid[valid.length-1];
-    return {...e, baseY: yOf(last.v)};
-  }).filter(Boolean).sort((a,b)=>a.baseY-b.baseY);
+    const lp = lastPt(e.totals);
+    if(!lp) return null;
+    return {...e, lineEndX: xOf(lp.i), lineEndY: yOf(lp.v)};
+  }).filter(Boolean);
 
-  // Spread end labels with min gap
-  const endGap = 16;
-  for(let i=1;i<endData.length;i++){
-    if(endData[i].baseY - endData[i-1].baseY < endGap){
-      endData[i].baseY = endData[i-1].baseY + endGap;
+  // Sort by actual y position (top to bottom)
+  endItems.sort((a,b) => a.lineEndY - b.lineEndY);
+
+  // Assign label y positions — start from actual positions but enforce min gap
+  const labelGap = 22;
+  const labelX = W - pad.r + 14;
+  const connectorX = W - pad.r + 6;
+
+  endItems.forEach(e => { e.labelY = e.lineEndY; });
+  // Push down overlaps
+  for(let i=1;i<endItems.length;i++){
+    if(endItems[i].labelY - endItems[i-1].labelY < labelGap){
+      endItems[i].labelY = endItems[i-1].labelY + labelGap;
     }
   }
-  const endLabels = endData.map(e => {
-    const pctStr = e.pct !== null ? ` ${fmtPct(e.pct)}` : '';
-    return `<text x="${W-pad.r+8}" y="${e.baseY+4}" font-size="10" fill="${e.stroke}" font-family="IBM Plex Mono" font-weight="600">${e.label}${pctStr}</text>`;
+
+  const endLabels = endItems.map(e => {
+    const pctStr = e.pct !== null ? `  ${fmtPct(e.pct)}` : '';
+    // Connector: short line from line endpoint to label
+    const connector = `<line x1="${e.lineEndX+6}" y1="${e.lineEndY}" x2="${connectorX}" y2="${e.labelY}" stroke="${e.stroke}" stroke-width="1" opacity="0.5" stroke-dasharray="2,2"/>`;
+    const label = `<text x="${labelX}" y="${e.labelY+4}" font-size="11" fill="${e.stroke}" font-family="IBM Plex Mono" font-weight="700">${e.label}${pctStr}</text>`;
+    return connector + label;
   }).join('');
 
   // Status note
