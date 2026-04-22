@@ -9,12 +9,16 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --navy:#0f1f3d;--navy2:#162847;--navy3:#1e3560;
-  --slate:#334e7a;--slate2:#4a6a9e;
-  --text:#f0f4fc;--text2:#a8bcdc;--text3:#6a8ab8;
-  --surface:#1a2e52;--surface2:#223660;--surface3:#0d1a30;
-  --border:#2a4070;--border2:#3a5590;
+
+/* ── THEME: Navy (default) ── */
+:root,[data-theme="navy"]{
+  --bg:        #0f1f3d;
+  --navy:      #0f1f3d;--navy2:#162847;--navy3:#1e3560;
+  --slate:     #334e7a;--slate2:#4a6a9e;
+  --text:      #f0f4fc;--text2:#a8bcdc;--text3:#6a8ab8;
+  --surface:   #1a2e52;--surface2:#223660;--surface3:#0d1a30;
+  --border:    #2a4070;--border2:#3a5590;
+  --accent:    #4a9ee0;
   --critical:#e05252;--critical-bg:#2d1010;--critical-light:#f4a0a0;
   --flagged:#e0803a;--flagged-bg:#2d1a08;--flagged-light:#f4c090;
   --watch:#d4b832;--watch-bg:#2a2208;--watch-light:#f0e090;
@@ -24,7 +28,53 @@
   --font-sans:'IBM Plex Sans',sans-serif;
   --font-mono:'IBM Plex Mono',monospace;
 }
-body{background:var(--navy);color:var(--text);font-family:var(--font-sans);font-size:15px;min-height:100vh}
+
+/* ── THEME: Slate (warm off-white light mode) ── */
+[data-theme="slate"]{
+  --bg:        #f2f0eb;
+  --navy:      #f2f0eb;--navy2:#e8e5de;--navy3:#dedad2;
+  --slate:     #c8c3b8;--slate2:#a09890;
+  --text:      #1a1714;--text2:#3d3832;--text3:#7a7268;
+  --surface:   #faf8f5;--surface2:#eceae4;--surface3:#e4e1da;
+  --border:    #d4d0c8;--border2:#bdb9b0;
+  --accent:    #2d6fa8;
+  --critical:#c0392b;--critical-bg:#fdecea;--critical-light:#7b1c14;
+  --flagged:#c0622b;--flagged-bg:#fdf0ea;--flagged-light:#7a3518;
+  --watch:#9a7d0a;--watch-bg:#fdf8e1;--watch-light:#5c4a06;
+  --typical:#7a7268;--typical-bg:#eceae4;
+  --strength:#217a4f;--strength-bg:#e8f5ee;--strength-light:#0f4a2c;
+  --above:#2d6fa8;--above-bg:#e8f0f8;--above-light:#1a4468;
+  --font-sans:'IBM Plex Sans',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+
+/* ── THEME: Obsidian (true dark, high contrast) ── */
+[data-theme="obsidian"]{
+  --bg:        #0d0d0d;
+  --navy:      #0d0d0d;--navy2:#141414;--navy3:#1a1a1a;
+  --slate:     #2a2a2a;--slate2:#3d3d3d;
+  --text:      #e8e8e8;--text2:#a8a8a8;--text3:#606060;
+  --surface:   #161616;--surface2:#1e1e1e;--surface3:#0a0a0a;
+  --border:    #2a2a2a;--border2:#3a3a3a;
+  --accent:    #58a6e6;
+  --critical:#e05252;--critical-bg:#1c0a0a;--critical-light:#f4a0a0;
+  --flagged:#e08040;--flagged-bg:#1c1008;--flagged-light:#f4c090;
+  --watch:#d4b832;--watch-bg:#1a1608;--watch-light:#f0e090;
+  --typical:#a8a8a8;--typical-bg:#161616;
+  --strength:#4ec98a;--strength-bg:#0a1c12;--strength-light:#90e0b4;
+  --above:#58a6e6;--above-bg:#0a1220;--above-light:#90c8f4;
+  --font-sans:'IBM Plex Sans',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+
+/* ── Scale system ── */
+.main-panel{font-size:1em}
+.main-panel.scale-sm{font-size:0.88em}
+.main-panel.scale-md{font-size:1em}
+.main-panel.scale-lg{font-size:1.15em}
+.main-panel.scale-xl{font-size:1.30em}
+
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);font-size:15px;min-height:100vh;transition:background 0.2s,color 0.2s}
 
 /* ── Header ── */
 .app-header{background:var(--navy3);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:stretch;gap:0}
@@ -93,7 +143,175 @@ td.right{text-align:right}
 td.center{text-align:center}
 td.name{color:var(--text);font-weight:400}
 
-/* ── Z-score cells ── */
+/* ── Tiered heatmap 2x2 grid ── */
+.heatmap-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;
+}
+@media(max-width:900px){.heatmap-grid{grid-template-columns:1fr}}
+
+.hm-tier-panel{
+  border-radius:10px;overflow:hidden;border:1px solid var(--border);
+  display:flex;flex-direction:column;
+}
+.hm-tier-panel-header{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 16px;cursor:pointer;user-select:none;
+  border-bottom:1px solid var(--border);
+}
+.hm-tier-panel-header:hover{filter:brightness(1.06)}
+.hm-tier-panel-header.critical{background:var(--critical-bg)}
+.hm-tier-panel-header.flagged{background:var(--flagged-bg)}
+.hm-tier-panel-header.watch{background:var(--watch-bg)}
+.hm-tier-panel-header.typical{background:var(--surface2)}
+.hm-tier-panel-title{font-size:15px;font-weight:700;letter-spacing:0.02em;flex:1}
+.hm-tier-panel-title.critical{color:var(--critical-light)}
+.hm-tier-panel-title.flagged{color:var(--flagged-light)}
+.hm-tier-panel-title.watch{color:var(--watch-light)}
+.hm-tier-panel-title.typical{color:var(--strength-light)}
+.hm-tier-panel-count{font-size:12px;font-family:var(--font-mono);color:var(--text3)}
+.hm-tier-panel-chevron{font-size:12px;color:var(--text3);transition:transform 0.2s}
+.hm-tier-panel-chevron.open{transform:rotate(180deg)}
+
+/* Summary chart inside panel */
+.hm-chart-body{
+  background:var(--surface);padding:16px;flex:1;
+}
+.hm-chart-title{
+  font-size:11px;color:var(--text3);font-family:var(--font-mono);
+  text-transform:uppercase;letter-spacing:0.07em;margin-bottom:12px;
+}
+.hm-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.hm-bar-row:last-child{margin-bottom:0}
+.hm-bar-domain{font-size:12px;color:var(--text2);width:76px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm-bar-outer{flex:1;height:20px;background:var(--border);border-radius:4px;overflow:hidden;position:relative}
+.hm-bar-fill{height:100%;border-radius:4px;transition:width 0.4s}
+.hm-bar-fill.critical{background:var(--critical)}
+.hm-bar-fill.flagged{background:var(--flagged)}
+.hm-bar-fill.watch{background:var(--watch)}
+.hm-bar-fill.typical{background:var(--strength)}
+.hm-bar-count{font-size:12px;font-family:var(--font-mono);color:var(--text2);width:24px;text-align:right;flex-shrink:0}
+.hm-empty{font-size:13px;color:var(--text3);padding:20px;text-align:center}
+
+/* Student list inside panel */
+.hm-student-list{background:var(--surface);border-top:1px solid var(--border)}
+.hm-list-header{
+  display:flex;align-items:center;gap:0;
+  padding:6px 0;border-bottom:1px solid var(--border);
+  background:var(--surface3);
+}
+.hm-list-th{font-size:10px;font-family:var(--font-mono);color:var(--text3);
+  text-transform:uppercase;letter-spacing:0.06em;padding:0 12px;}
+.hm-list-th.name{flex:0 0 130px}
+.hm-list-th.weak{flex:0 0 100px}
+.hm-list-th.total{flex:0 0 60px}
+.hm-list-th.domains{flex:1}
+
+.hm-srow{
+  display:flex;align-items:center;gap:0;
+  border-bottom:1px solid var(--border);min-height:38px;
+  cursor:pointer;transition:background 0.1s;
+}
+.hm-srow:last-child{border-bottom:none}
+.hm-srow:hover{background:var(--surface2)}
+.hm-srow-name{
+  flex:0 0 130px;padding:8px 12px;
+  font-size:13px;font-weight:500;color:var(--accent);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.hm-srow-weak{
+  flex:0 0 100px;padding:8px 12px;
+  font-size:12px;color:var(--text2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.hm-srow-total{
+  flex:0 0 60px;padding:8px 8px;
+  font-size:14px;font-weight:700;font-family:var(--font-mono);color:var(--text);
+}
+.hm-srow-domains{
+  flex:1;display:flex;gap:4px;padding:6px 8px;flex-wrap:wrap;align-items:center;
+}
+.hm-chip{
+  display:flex;flex-direction:column;align-items:center;
+  border-radius:4px;padding:3px 6px;min-width:38px;gap:1px;
+}
+.hm-chip-lbl{font-size:8px;font-family:var(--font-mono);opacity:0.8;text-transform:uppercase}
+.hm-chip-val{font-size:12px;font-weight:700;font-family:var(--font-mono)}
+.hm-chip.critical{background:var(--critical-bg);color:var(--critical-light);border:1px solid var(--critical)}
+.hm-chip.flagged{background:var(--flagged-bg);color:var(--flagged-light);border:1px solid var(--flagged)}
+.hm-chip.watch{background:var(--watch-bg);color:var(--watch-light);border:1px solid var(--watch)}
+.hm-chip.typical{background:var(--surface3);color:var(--text2);border:1px solid var(--border)}
+.hm-chip.strength{background:var(--strength-bg);color:var(--strength-light);border:1px solid var(--strength)}
+
+/* domain toggle button */
+.domain-toggle-btn{
+  background:var(--surface2);border:1px solid var(--border2);
+  color:var(--text2);font-family:var(--font-mono);font-size:12px;
+  padding:6px 14px;border-radius:6px;cursor:pointer;transition:all 0.15s;
+}
+.domain-toggle-btn:hover{background:var(--slate);color:var(--text)}
+
+/* ── Star twinkle animation ── */
+@keyframes twinkle{
+  0%,100%{opacity:1;transform:scale(1) rotate(0deg)}
+  25%{opacity:0.6;transform:scale(1.3) rotate(15deg)}
+  50%{opacity:1;transform:scale(0.9) rotate(-10deg)}
+  75%{opacity:0.7;transform:scale(1.2) rotate(5deg)}
+}
+.star-badge{
+  display:inline-block;font-size:16px;
+  animation:twinkle 2s ease-in-out infinite;
+  margin-left:4px;cursor:default;
+}
+
+/* ── Domain card progress stat rows ── */
+.dc-progress-stats{
+  display:flex;flex-direction:column;gap:0;
+  margin-bottom:14px;border:1px solid var(--border);border-radius:8px;overflow:hidden;
+}
+.dc-progress-row{
+  display:flex;flex-direction:column;
+  padding:12px 14px;border-bottom:1px solid var(--border);gap:6px;
+}
+.dc-progress-row:last-child{border-bottom:none}
+.dc-progress-header{
+  display:flex;justify-content:space-between;align-items:center;
+}
+.dc-progress-label{font-size:14px;color:var(--text2);font-weight:400}
+.dc-progress-val{
+  font-size:15px;font-weight:600;font-family:var(--font-mono);color:var(--text);
+  display:flex;align-items:center;gap:4px;
+}
+.dc-progress-track{
+  width:100%;height:8px;background:var(--border);border-radius:4px;
+  overflow:hidden;position:relative;
+}
+.dc-progress-fill{
+  height:100%;border-radius:4px;transition:width 0.4s ease;
+  position:relative;
+}
+.dc-progress-fill.above{background:var(--strength)}
+.dc-progress-fill.near{background:var(--watch)}
+.dc-progress-fill.below{background:var(--critical)}
+.dc-progress-sub{
+  font-size:12px;color:var(--text3);font-family:var(--font-mono);
+}
+
+/* ── Z-score footer on domain card ── */
+.dc-footer{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  padding-top:10px;border-top:1px solid var(--border);margin-top:4px;
+  flex-wrap:wrap;gap:8px;
+}
+.dc-zscore-block{
+  display:flex;flex-direction:column;gap:3px;align-items:flex-end;
+}
+.dc-zscore-label{font-size:10px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.05em}
+.dc-zscore-vals{display:flex;gap:8px;align-items:center}
+.dc-zscore-item{display:flex;flex-direction:column;align-items:center;gap:1px}
+.dc-zscore-item-label{font-size:9px;color:var(--text3);font-family:var(--font-mono)}
+.dc-zscore-item-val{font-size:12px;font-weight:500;font-family:var(--font-mono);color:var(--text3)}
+
+/* z-score cells (keep for other tabs) */
 .z-cell{font-family:var(--font-mono);font-size:12px;text-align:center;padding:7px 6px!important;border-radius:3px;white-space:nowrap}
 .z-critical{background:var(--critical-bg);color:var(--critical-light)}
 .z-flagged{background:var(--flagged-bg);color:var(--flagged-light)}
@@ -131,20 +349,19 @@ select:focus{border-color:#4a9ee0}
 .profile-score-tile-val{font-size:30px;font-weight:600;font-family:var(--font-mono);color:var(--text);line-height:1}
 .profile-score-tile-sub{font-size:12px;color:var(--text3);margin-top:2px}
 
-/* 3-col domain grid */
+/* 2-col domain grid */
 .profile-grid{
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+  grid-template-columns:repeat(2,1fr);
   gap:16px;
   margin-bottom:24px;
 }
-@media(max-width:900px){.profile-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:580px){.profile-grid{grid-template-columns:1fr}}
 
 /* Domain card — refactored */
 .domain-card{
   background:var(--surface);border:1px solid var(--border);
-  border-radius:10px;padding:18px 16px;
+  border-radius:10px;padding:20px 18px;
   display:flex;flex-direction:column;gap:0;
   transition:border-color 0.15s;
 }
@@ -157,62 +374,66 @@ select:focus{border-color:#4a9ee0}
 /* Card top row: name + score */
 .dc-top{
   display:flex;justify-content:space-between;
-  align-items:flex-start;margin-bottom:10px;
+  align-items:flex-start;margin-bottom:12px;
 }
 .dc-name{
-  font-size:13px;font-weight:500;color:var(--text2);
-  letter-spacing:0.01em;line-height:1.2;max-width:120px;
+  font-size:15px;font-weight:600;color:var(--text);
+  letter-spacing:0.01em;line-height:1.3;
 }
 .dc-score{
-  font-size:32px;font-weight:600;font-family:var(--font-mono);
+  font-size:38px;font-weight:700;font-family:var(--font-mono);
   color:var(--text);line-height:1;
 }
 
 /* Badge row */
-.dc-badges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.dc-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.dc-badges .badge{font-size:12px;padding:3px 10px}
 
-/* Metric rows */
-.dc-metrics{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
-.dc-metric{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.dc-metric-label{
-  font-size:12px;color:var(--text3);font-family:var(--font-mono);
-  white-space:nowrap;flex-shrink:0;
+/* Stat blocks — replaces tiny metric rows */
+.dc-stats{
+  display:flex;flex-direction:column;gap:0;
+  margin-bottom:14px;border:1px solid var(--border);border-radius:8px;overflow:hidden;
 }
-.dc-metric-right{display:flex;align-items:center;gap:6px}
-.dc-metric-val{
-  font-size:13px;font-weight:500;font-family:var(--font-mono);color:var(--text2);
-  min-width:38px;text-align:right;
+.dc-stat-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:11px 14px;border-bottom:1px solid var(--border);
+  gap:12px;
 }
-
-/* Mini z-bar inside card */
-.dc-bar-wrap{margin-top:auto;padding-top:12px;border-top:1px solid var(--border)}
-.dc-bar-track{
-  width:100%;height:5px;background:var(--border);
-  border-radius:3px;position:relative;
+.dc-stat-row:last-child{border-bottom:none}
+.dc-stat-label{
+  font-size:14px;color:var(--text2);font-weight:400;flex-shrink:0;
 }
-.dc-bar-center{
-  position:absolute;left:50%;top:0;
-  width:1px;height:5px;background:var(--text3);
+.dc-stat-right{
+  display:flex;flex-direction:column;align-items:flex-end;gap:2px;
 }
-.dc-bar-fill{position:absolute;top:0;height:5px;border-radius:3px}
-.dc-bar-labels{
-  display:flex;justify-content:space-between;
-  margin-top:4px;font-size:10px;color:var(--text3);font-family:var(--font-mono);
+.dc-stat-main{
+  font-size:16px;font-weight:600;font-family:var(--font-mono);color:var(--text);
 }
+.dc-stat-sub{
+  font-size:12px;color:var(--text3);font-family:var(--font-mono);text-align:right;
+}
+.dc-stat-pill{
+  display:inline-block;padding:2px 8px;border-radius:4px;
+  font-size:12px;font-family:var(--font-mono);font-weight:600;
+  white-space:nowrap;margin-left:6px;
+}
+.dc-stat-pill.above{background:var(--strength-bg);color:var(--strength-light);border:1px solid var(--strength)}
+.dc-stat-pill.below{background:var(--critical-bg);color:var(--critical-light);border:1px solid var(--critical)}
+.dc-stat-pill.near{background:var(--watch-bg);color:var(--watch-light);border:1px solid var(--watch)}
 
 /* Timeline strip */
 .dc-timeline{
-  display:flex;align-items:center;gap:6px;
-  margin-top:10px;padding-top:10px;border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+  margin-top:4px;padding-top:14px;border-top:1px solid var(--border);
   flex-wrap:wrap;
 }
-.dc-tl-win{display:flex;flex-direction:column;align-items:center;gap:1px}
-.dc-tl-label{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
-.dc-tl-score{font-size:12px;font-weight:500;font-family:var(--font-mono)}
-.dc-tl-arrow{font-size:12px;flex-shrink:0}
+.dc-tl-win{display:flex;flex-direction:column;align-items:center;gap:3px}
+.dc-tl-label{font-size:12px;color:var(--text3);font-family:var(--font-mono);font-weight:500}
+.dc-tl-score{font-size:16px;font-weight:600;font-family:var(--font-mono)}
+.dc-tl-arrow{font-size:16px;flex-shrink:0}
 .dc-tl-arrow.up{color:var(--strength)}
 .dc-tl-arrow.down{color:var(--critical)}
-.dc-tl-delta{font-size:9px;font-family:var(--font-mono);text-align:center}
+.dc-tl-delta{font-size:11px;font-family:var(--font-mono);text-align:center;font-weight:500}
 .dc-tl-delta.pos{color:var(--strength)}
 .dc-tl-delta.neg{color:var(--critical)}
 
@@ -228,6 +449,41 @@ select:focus{border-color:#4a9ee0}
 .domain-bar-student{height:100%;border-radius:4px;position:absolute;top:0;left:0;transition:width 0.4s}
 .domain-bar-bm{position:absolute;top:0;height:100%;width:2px;background:#4a9ee0;opacity:0.8}
 .domain-bar-val{font-family:var(--font-mono);font-size:12px;color:var(--text2);width:30px;flex-shrink:0}
+
+/* ── Display settings ── */
+.display-setting-group{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.scale-btn,.theme-btn{
+  background:var(--surface2);border:2px solid var(--border);
+  color:var(--text2);font-family:var(--font-sans);font-size:13px;
+  padding:12px 18px;border-radius:8px;cursor:pointer;
+  transition:all 0.15s;text-align:center;min-width:90px;
+}
+.scale-btn:hover,.theme-btn:hover{border-color:var(--border2);color:var(--text)}
+.scale-btn.active,.theme-btn.active{
+  border-color:var(--accent);background:var(--surface3);
+  color:var(--text);
+}
+.scale-btn-label{font-weight:600;font-size:14px;display:block;margin-bottom:3px}
+.scale-btn-sub{font-size:11px;color:var(--text3);font-family:var(--font-mono)}
+.theme-btn.active .scale-btn-sub{color:var(--text3)}
+.theme-swatch{
+  width:100%;height:36px;border-radius:5px;margin-bottom:8px;
+  display:flex;overflow:hidden;border:1px solid var(--border);
+}
+.theme-swatch-block{flex:1;height:100%}
+.theme-btn-name{font-weight:600;font-size:13px;display:block;margin-bottom:2px}
+.theme-btn-sub{font-size:11px;color:var(--text3);font-family:var(--font-mono)}
+
+/* ── Growth chart ── */
+.growth-chart-wrap{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:20px 20px 14px;margin-bottom:24px;
+}
+.growth-chart-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.growth-chart-sub{font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:16px}
+.growth-chart-legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:14px}
+.growth-chart-legend-item{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text3);font-family:var(--font-mono)}
+.growth-chart-legend-line{width:24px;height:2px;border-radius:1px;flex-shrink:0}
 
 /* Callout */
 .callout{background:var(--surface);border-left:3px solid var(--slate2);border-radius:0 6px 6px 0;padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--text2);line-height:1.6}
@@ -391,6 +647,7 @@ try{const s=localStorage.getItem('mtss_pm');if(s)pmData=JSON.parse(s);}catch(e){
 function savePM(){try{localStorage.setItem('mtss_pm',JSON.stringify(pmData));}catch(e){}}
 let pmSelectedStudent = '';
 let pmEditingTrack = null;
+let profileChartMode = 'benchmark'; // 'benchmark' | 'pm'
 
 // ============================================================
 // STATISTICS ENGINE
@@ -493,6 +750,7 @@ function render(){
   else if(currentTab==='pm')el.innerHTML=renderPM();
   else if(currentTab==='data')el.innerHTML=renderData();
   else if(currentTab==='settings')el.innerHTML=renderSettings();
+  applyDisplayPrefs();
   bindEvents();
 }
 
@@ -520,50 +778,400 @@ function renderDataStatus(){
 }
 
 // ============================================================
-// HEATMAP
+// HEATMAP — 2x2 tiered panels, chart default, expandable student list
 // ============================================================
+let heatmapExpanded = {critical:false, flagged:false, watch:false, typical:false};
+
+function toggleHeatmapTier(tier){
+  heatmapExpanded[tier] = !heatmapExpanded[tier];
+  render();
+}
+
+function chipClass(score, domain, win){
+  const allScores = students.map(s=>getScore(s,domain,win)).filter(v=>v!==null);
+  if(!allScores.length) return 'typical';
+  const sd = stddev(allScores);
+  const m = mean(allScores);
+  const z = sd===0?0:(score-m)/sd;
+  if(z<-1.5) return 'critical';
+  if(z<-1.0) return 'flagged';
+  if(z<-0.5) return 'watch';
+  if(z>=1.0)  return 'strength';
+  return 'typical';
+}
+
 function renderHeatmap(){
-  const data=computeStats();
-  const sortedData=[...data].sort((a,b)=>a.minZ-b.minZ);
-  const flaggedCount=data.filter(s=>s.isFlagged).length;
-  const rows=sortedData.map(s=>{
-    const cols=DOMAINS.map(d=>{
-      const z=s[d].cohortZ;
-      if(z===null)return`<td class="z-cell z-typical" style="color:var(--text3)">—</td>`;
-      return`<td class="z-cell ${zCellClass(z)}">${fmt(z,2)}</td>`;
+  const data = computeStats();
+
+  const tiers = {
+    critical: data.filter(s=>s.minZ<-1.5).sort((a,b)=>a.minZ-b.minZ),
+    flagged:  data.filter(s=>s.minZ>=-1.5&&s.minZ<-1.0).sort((a,b)=>a.minZ-b.minZ),
+    watch:    data.filter(s=>s.minZ>=-1.0&&s.minZ<-0.5).sort((a,b)=>a.minZ-b.minZ),
+    typical:  data.filter(s=>s.minZ>=-0.5).sort((a,b)=>b.minZ-a.minZ),
+  };
+
+  const tierConfig = [
+    {key:'critical', label:'⚠ Critical',  desc:'z < −1.5', color:'critical'},
+    {key:'flagged',  label:'▲ Flagged',   desc:'z < −1.0', color:'flagged'},
+    {key:'watch',    label:'◆ Watch',     desc:'z < −0.5', color:'watch'},
+    {key:'typical',  label:'✓ Typical',   desc:'z ≥ −0.5', color:'typical'},
+  ];
+
+  // Build domain weakness frequency chart for a tier
+  function buildChart(tierStudents, colorKey){
+    if(!tierStudents.length) return`<div class="hm-empty">No students in this tier</div>`;
+    const freq = {};
+    DOMAINS.forEach(d=>freq[d]=0);
+    tierStudents.forEach(s=>{ if(s.weakest) freq[s.weakest]=(freq[s.weakest]||0)+1; });
+    const maxFreq = Math.max(...Object.values(freq), 1);
+    const bars = DOMAINS.map(d=>{
+      const count = freq[d]||0;
+      const pct = (count/maxFreq)*100;
+      const name = config.domainNames[d];
+      return`<div class="hm-bar-row">
+        <div class="hm-bar-domain" title="${name}">${name}</div>
+        <div class="hm-bar-outer">
+          <div class="hm-bar-fill ${colorKey}" style="width:${pct}%"></div>
+        </div>
+        <div class="hm-bar-count">${count}</div>
+      </div>`;
     }).join('');
-    const weakName=config.domainNames[s.weakest];
-    const pmTracks=pmData[s.name]||[];
-    const pmBadge=pmTracks.length?`<span class="${pmTracks.some(t=>t.tier==3)?'tier-3-badge':'tier-2-badge'}" style="margin-left:4px">PM</span>`:'';
-    return`<tr>
-      <td class="name" style="cursor:pointer;color:#4a9ee0" onclick="gotoStudent('${s.name}')">${s.name}${pmBadge}</td>
-      ${cols}
-      <td class="mono center" style="color:var(--text3)">${weakName}</td>
-      <td class="mono center ${zCellClass(s.minZ)}">${fmt(s.minZ,2)}</td>
-    </tr>`;
-  }).join('');
-  const domainHeaders=DOMAINS.map(d=>`<th class="center">${config.domainNames[d]}</th>`).join('');
+    return`<div class="hm-chart-body">
+      <div class="hm-chart-title">Weakest domain distribution — ${tierStudents.length} student${tierStudents.length!==1?'s':''}</div>
+      ${bars}
+    </div>`;
+  }
+
+  // Build student list for a tier
+  function buildStudentList(tierStudents){
+    if(!tierStudents.length) return'';
+    const rows = tierStudents.map(s=>{
+      const rawSt = students.find(st=>st.Student===s.name);
+      const rawScores = DOMAINS.map(d=>getScore(rawSt,d,currentWindow)).filter(v=>v!==null);
+      const total = rawScores.length ? rawScores.reduce((a,b)=>a+b,0) : null;
+      const pmTracks = pmData[s.name]||[];
+      const pmBadge = pmTracks.length ? `<span class="${pmTracks.some(t=>t.tier==3)?'tier-3-badge':'tier-2-badge'}" style="margin-left:4px">PM</span>` : '';
+
+      const chips = DOMAINS.map(d=>{
+        const sc = rawSt ? getScore(rawSt,d,currentWindow) : null;
+        if(sc===null) return`<div class="hm-chip typical"><div class="hm-chip-lbl">${d}</div><div class="hm-chip-val">—</div></div>`;
+        const cls = chipClass(sc,d,currentWindow);
+        return`<div class="hm-chip ${cls}"><div class="hm-chip-lbl">${d}</div><div class="hm-chip-val">${sc}</div></div>`;
+      }).join('');
+
+      return`<div class="hm-srow" onclick="gotoStudent('${s.name}')">
+        <div class="hm-srow-name">${s.name}${pmBadge}</div>
+        <div class="hm-srow-weak">${config.domainNames[s.weakest]}</div>
+        <div class="hm-srow-total">${total??'—'}</div>
+        <div class="hm-srow-domains">${chips}</div>
+      </div>`;
+    }).join('');
+
+    return`<div class="hm-student-list">
+      <div class="hm-list-header">
+        <div class="hm-list-th name">Student</div>
+        <div class="hm-list-th weak">Weakest</div>
+        <div class="hm-list-th total">Total</div>
+        <div class="hm-list-th domains">Domain Scores</div>
+      </div>
+      ${rows}
+    </div>`;
+  }
+
+  // Build each tier panel
+  function buildPanel(tc){
+    const ts = tiers[tc.key];
+    const expanded = heatmapExpanded[tc.key];
+    return`<div class="hm-tier-panel">
+      <div class="hm-tier-panel-header ${tc.color}" onclick="toggleHeatmapTier('${tc.key}')">
+        <div class="hm-tier-panel-title ${tc.color}">${tc.label}</div>
+        <div class="hm-tier-panel-count">${ts.length} student${ts.length!==1?'s':''} · ${tc.desc}</div>
+        <div class="hm-tier-panel-chevron ${expanded?'open':''}">▼</div>
+      </div>
+      ${expanded ? buildStudentList(ts) : buildChart(ts, tc.color)}
+    </div>`;
+  }
+
+  const panels = tierConfig.map(buildPanel);
+
   return`<div>
     <div class="panel-header">
-      <div class="panel-header-left"><div class="panel-title">Cohort Z-Score Heatmap</div><div class="panel-sub">comparing each student to cohort mean · sorted by weakest domain</div></div>
+      <div class="panel-header-left">
+        <div class="panel-title">Cohort Overview</div>
+        <div class="panel-sub">click any tier to expand student list · click again to see domain distribution</div>
+      </div>
       ${renderWindowToggle()}
     </div>
     <div class="metric-row">
       <div class="metric-card"><div class="metric-label">Total Students</div><div class="metric-value">${data.length}</div></div>
-      <div class="metric-card"><div class="metric-label">Flagged (any domain)</div><div class="metric-value" style="color:var(--flagged)">${flaggedCount}</div><div class="metric-sub">${data.length?Math.round(flaggedCount/data.length*100):0}% of cohort</div></div>
-      <div class="metric-card"><div class="metric-label">Critical (z &lt; −1.5)</div><div class="metric-value" style="color:var(--critical)">${data.filter(s=>s.minZ<-1.5).length}</div></div>
-      <div class="metric-card"><div class="metric-label">All Typical</div><div class="metric-value" style="color:var(--strength)">${data.filter(s=>s.minZ>=-0.5).length}</div></div>
+      <div class="metric-card"><div class="metric-label">Critical</div><div class="metric-value" style="color:var(--critical)">${tiers.critical.length}</div><div class="metric-sub">z &lt; −1.5</div></div>
+      <div class="metric-card"><div class="metric-label">Flagged</div><div class="metric-value" style="color:var(--flagged)">${tiers.flagged.length}</div><div class="metric-sub">z &lt; −1.0</div></div>
+      <div class="metric-card"><div class="metric-label">Watch</div><div class="metric-value" style="color:var(--watch)">${tiers.watch.length}</div><div class="metric-sub">z &lt; −0.5</div></div>
+      <div class="metric-card"><div class="metric-label">Typical</div><div class="metric-value" style="color:var(--strength)">${tiers.typical.length}</div><div class="metric-sub">on track</div></div>
     </div>
-    <div class="legend-row">
-      <div class="legend-item"><div class="legend-dot" style="background:var(--critical)"></div>Critical (z &lt; −1.5)</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--flagged)"></div>Flagged (z &lt; −1.0)</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--watch)"></div>Watch (z &lt; −0.5)</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#334e7a"></div>Typical</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--strength)"></div>Strength (z &gt; 1.0)</div>
+    <div class="heatmap-grid">
+      ${panels[0]}${panels[1]}
+      ${panels[2]}${panels[3]}
     </div>
-    <div class="table-wrap">
+  </div>`;
+}
+
+// ============================================================
+// GROWTH CHART — total raw score across windows
+// ============================================================
+// Chart colors — dramatic contrast, works across themes
+const CHART_STUDENT = '#f59e0b'; // amber/orange
+const CHART_IDEAL   = '#3b82f6'; // electric blue
+const CHART_COHORT  = '#10b981'; // emerald green
+
+function setProfileChartMode(mode){
+  profileChartMode = mode;
+  render();
+}
+
+function renderGrowthChart(studentRaw, studentName){
+  const avail = availableWindows();
+  const allWins = WINDOWS;
+
+  const idealTotals = allWins.map(w =>
+    DOMAINS.reduce((sum, d) => sum + getBenchmark(d, w), 0)
+  );
+  const cohortTotals = allWins.map(w => {
+    const sums = students.map(s => {
+      const sc = DOMAINS.map(d => getScore(s, d, w)).filter(v => v !== null);
+      return sc.length === DOMAINS.length ? sc.reduce((a,b) => a+b, 0) : null;
+    }).filter(v => v !== null);
+    return sums.length ? mean(sums) : null;
+  });
+  const studentTotals = allWins.map(w => {
+    if (!studentRaw) return null;
+    const sc = DOMAINS.map(d => getScore(studentRaw, d, w)).filter(v => v !== null);
+    return sc.length === DOMAINS.length ? sc.reduce((a,b) => a+b, 0) : null;
+  });
+
+  // Percent growth from first valid to last valid window
+  function pctGrowth(totals){
+    const valid = totals.map((v,i) => v!==null?{v,i}:null).filter(Boolean);
+    if(valid.length < 2) return null;
+    const first = valid[0], last = valid[valid.length-1];
+    if(first.v === 0) return null;
+    const pct = ((last.v - first.v) / first.v) * 100;
+    return pct;
+  }
+
+  const studentPct = pctGrowth(studentTotals);
+  const cohortPct  = pctGrowth(cohortTotals);
+  const idealPct   = pctGrowth(idealTotals);
+
+  function fmtPct(p){ if(p===null)return null; return (p>=0?'+':'')+p.toFixed(1)+'%'; }
+
+  // SVG
+  const W = 560, H = 200;
+  const pad = {l: 52, r: 120, t: 20, b: 36}; // extra right padding for labels
+  const chartW = W - pad.l - pad.r;
+  const chartH = H - pad.t - pad.b;
+
+  const allVals = [...idealTotals, ...cohortTotals.filter(v=>v!==null), ...studentTotals.filter(v=>v!==null)];
+  if(!allVals.length) return`<div class="growth-chart-wrap"><div class="hm-empty">Not enough data to show growth chart.</div></div>`;
+
+  const rawMin = Math.min(...allVals);
+  const rawMax = Math.max(...allVals);
+  const ySpan = rawMax - rawMin || 20;
+  const yMin = Math.max(0, rawMin - ySpan * 0.2);
+  const yMax = rawMax + ySpan * 0.2;
+
+  const xOf = i => pad.l + (i / (allWins.length - 1)) * chartW;
+  const yOf = v => pad.t + chartH - ((v - yMin) / (yMax - yMin)) * chartH;
+
+  // Grid lines
+  const gridLines = Array.from({length:5}, (_,i) => {
+    const v = yMin + (yMax - yMin) * (i/4);
+    const y = yOf(v);
+    return `<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#2a4070" stroke-width="1"/>
+      <text x="${pad.l-6}" y="${y+4}" font-size="10" fill="#6a8ab8" text-anchor="end">${Math.round(v)}</text>`;
+  }).join('');
+
+  const xLabels = allWins.map((w,i) => {
+    const hasData = avail.includes(w);
+    return `<text x="${xOf(i)}" y="${H-pad.b+18}" font-size="11" fill="${hasData?'#a8bcdc':'#3a5590'}" text-anchor="middle" font-family="IBM Plex Mono">${w}</text>`;
+  }).join('');
+
+  // Build path + dots + value labels with anti-overlap
+  // We collect all label positions and stagger vertically if they're too close
+  function buildLine(totals, stroke, strokeWidth, dasharray){
+    const pts = totals.map((v,i) => v!==null ? {x:xOf(i), y:yOf(v), v, i} : null).filter(Boolean);
+    if(!pts.length) return {svg:'', labelPts:[]};
+
+    const segments = [];
+    let cur = [];
+    totals.forEach((v,i) => {
+      const p = v!==null ? {x:xOf(i), y:yOf(v), v, i} : null;
+      if(p){ cur.push(p); }
+      else { if(cur.length){ segments.push(cur); cur=[]; } }
+    });
+    if(cur.length) segments.push(cur);
+
+    const polylines = segments.map(seg =>
+      seg.length>1 ? `<polyline points="${seg.map(p=>`${p.x},${p.y}`).join(' ')}" fill="none" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-dasharray="${dasharray}" opacity="0.9"/>` : ''
+    ).join('');
+
+    const dots = pts.map(p =>
+      `<circle cx="${p.x}" cy="${p.y}" r="5" fill="${stroke}" stroke="var(--surface)" stroke-width="2"/>`
+    ).join('');
+
+    return {svg: polylines+dots, labelPts: pts.map(p=>({...p, stroke}))};
+  }
+
+  const studentLine = buildLine(studentTotals, CHART_STUDENT, 2.5, 'none');
+  const idealLine   = buildLine(idealTotals,   CHART_IDEAL,   1.5, '6,3');
+  const cohortLine  = buildLine(cohortTotals,  CHART_COHORT,  1.5, '3,3');
+
+  // Anti-overlap label placement
+  // Group all label points by x position, then stagger y offsets
+  const allLabelPts = [...studentLine.labelPts, ...idealLine.labelPts, ...cohortLine.labelPts];
+  // Sort by x then by y
+  allLabelPts.sort((a,b) => a.x - b.x || a.y - b.y);
+
+  // For each x group, spread labels vertically with min 14px gap
+  const labelsByX = {};
+  allLabelPts.forEach(p => {
+    const key = Math.round(p.x);
+    if(!labelsByX[key]) labelsByX[key] = [];
+    labelsByX[key].push(p);
+  });
+
+  const labelSVG = Object.values(labelsByX).map(group => {
+    // Sort by y value
+    group.sort((a,b) => a.y - b.y);
+    const minGap = 15;
+    // Assign offsets to avoid overlap — push upward from baseline
+    const offsets = group.map(()=> -12); // default above dot
+    for(let i=1;i<group.length;i++){
+      const prevY = group[i-1].y + offsets[i-1];
+      const currY = group[i].y + offsets[i];
+      if(prevY - currY < minGap){
+        offsets[i] = offsets[i] - (minGap - (prevY - currY));
+      }
+    }
+    return group.map((p,i) =>
+      `<text x="${p.x}" y="${p.y + offsets[i]}" font-size="10" fill="${p.stroke}" text-anchor="middle" font-family="IBM Plex Mono" font-weight="600">${Math.round(p.v)}</text>`
+    ).join('');
+  }).join('');
+
+  // Right-side legend labels (end of line annotations)
+  function endLabel(totals, stroke, label, pct){
+    const valid = totals.map((v,i)=>v!==null?{v,i}:null).filter(Boolean);
+    if(!valid.length) return'';
+    const last = valid[valid.length-1];
+    const x = xOf(last.i) + chartW/(allWins.length-1||1) * 0.15 + pad.l - xOf(last.i) + xOf(last.i) + 10;
+    const y = yOf(last.v);
+    const pctStr = pct !== null ? ` (${fmtPct(pct)})` : '';
+    return `<text x="${W-pad.r+8}" y="${y+4}" font-size="10" fill="${stroke}" font-family="IBM Plex Mono" font-weight="600" opacity="0.9">${label}${pctStr}</text>`;
+  }
+
+  // Stagger end labels to avoid overlap
+  const endData = [
+    {totals:studentTotals, stroke:CHART_STUDENT, label:'Student', pct:studentPct},
+    {totals:idealTotals,   stroke:CHART_IDEAL,   label:'Ideal',   pct:idealPct},
+    {totals:cohortTotals,  stroke:CHART_COHORT,  label:'Class',   pct:cohortPct},
+  ].map(e => {
+    const valid = e.totals.map((v,i)=>v!==null?{v,i}:null).filter(Boolean);
+    if(!valid.length) return null;
+    const last = valid[valid.length-1];
+    return {...e, baseY: yOf(last.v)};
+  }).filter(Boolean).sort((a,b)=>a.baseY-b.baseY);
+
+  // Spread end labels with min gap
+  const endGap = 16;
+  for(let i=1;i<endData.length;i++){
+    if(endData[i].baseY - endData[i-1].baseY < endGap){
+      endData[i].baseY = endData[i-1].baseY + endGap;
+    }
+  }
+  const endLabels = endData.map(e => {
+    const pctStr = e.pct !== null ? ` ${fmtPct(e.pct)}` : '';
+    return `<text x="${W-pad.r+8}" y="${e.baseY+4}" font-size="10" fill="${e.stroke}" font-family="IBM Plex Mono" font-weight="600">${e.label}${pctStr}</text>`;
+  }).join('');
+
+  // Status note
+  const lastAvailIdx = [...allWins].reverse().findIndex(w => avail.includes(w));
+  const lastWinIdx = lastAvailIdx >= 0 ? allWins.length - 1 - lastAvailIdx : -1;
+  let statusNote = '';
+  if(lastWinIdx >= 0 && studentTotals[lastWinIdx] !== null){
+    const gap = Math.round(studentTotals[lastWinIdx] - idealTotals[lastWinIdx]);
+    statusNote = gap >= 0
+      ? `<span style="color:${CHART_STUDENT};font-weight:600">+${gap} above ideal</span>`
+      : `<span style="color:var(--critical);font-weight:600">${gap} below ideal</span>`;
+  }
+
+  return `<div class="growth-chart-wrap">
+    <div class="growth-chart-title">Total Score Growth</div>
+    <div class="growth-chart-sub">sum of all domain raw scores · BOY → MOY → EOY ${statusNote ? '· '+statusNote : ''}</div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;overflow:visible">
+      ${gridLines}
+      ${xLabels}
+      ${idealLine.svg}
+      ${cohortLine.svg}
+      ${studentLine.svg}
+      ${labelSVG}
+      ${endLabels}
+    </svg>
+    <div class="growth-chart-legend">
+      <div class="growth-chart-legend-item">
+        <div class="growth-chart-legend-line" style="background:${CHART_STUDENT};height:3px"></div>
+        <span>This student${studentPct!==null?' · <strong style="color:'+CHART_STUDENT+'">'+fmtPct(studentPct)+' total growth</strong>':''}</span>
+      </div>
+      <div class="growth-chart-legend-item">
+        <div class="growth-chart-legend-line" style="background:${CHART_IDEAL};border-top:2px dashed ${CHART_IDEAL};height:0;margin-top:1px"></div>
+        <span>Benchmark ideal${idealPct!==null?' · <strong style="color:'+CHART_IDEAL+'">'+fmtPct(idealPct)+'</strong>':''}</span>
+      </div>
+      <div class="growth-chart-legend-item">
+        <div class="growth-chart-legend-line" style="background:${CHART_COHORT};border-top:2px dotted ${CHART_COHORT};height:0;margin-top:1px"></div>
+        <span>Class average${cohortPct!==null?' · <strong style="color:'+CHART_COHORT+'">'+fmtPct(cohortPct)+'</strong>':''}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+// Inline PM summary for profile view
+function renderProfilePMView(studentName){
+  const tracks = pmData[studentName]||[];
+  if(!tracks.length){
+    return`<div class="growth-chart-wrap">
+      <div class="growth-chart-title">Progress Monitoring</div>
+      <div class="hm-empty" style="padding:24px">No progress monitoring tracks for this student yet.<br>
+        <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="gotoPM('${studentName}')">Set Up Progress Monitoring →</button>
+      </div>
+    </div>`;
+  }
+
+  const rows = tracks.map(t=>{
+    const pts = t.points||[];
+    const last = pts[pts.length-1];
+    const onTrack = last ? isOnTrack(t,last.date,last.score) : null;
+    const pct = t.goal&&t.baseline!==undefined&&last ? Math.round((last.score-t.baseline)/(t.goal-t.baseline)*100) : null;
+    const statusColor = onTrack===null?'var(--text3)':onTrack?'var(--strength)':'var(--critical)';
+    const statusText  = onTrack===null?'No data':onTrack?'✓ On Track':'✗ Needs Attention';
+    return`<tr>
+      <td class="name">${t.name}</td>
+      <td class="center"><span class="${t.tier==3?'tier-3-badge':'tier-2-badge'}">Tier ${t.tier}</span></td>
+      <td class="mono center">${t.baseline??'—'}</td>
+      <td class="mono center">${last?last.score:'—'}</td>
+      <td class="mono center">${t.goal??'—'}</td>
+      <td class="mono center">${pct!==null?pct+'%':'—'}</td>
+      <td class="center" style="color:${statusColor}">${statusText}</td>
+    </tr>`;
+  }).join('');
+
+  return`<div class="growth-chart-wrap">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div class="growth-chart-title">Progress Monitoring — ${studentName}</div>
+      <button class="btn btn-sm" onclick="gotoPM('${studentName}')">Manage Tracks →</button>
+    </div>
+    <div class="growth-chart-sub">${tracks.length} active track${tracks.length!==1?'s':''}</div>
+    <div class="table-wrap" style="margin-top:12px">
       <table>
-        <thead><tr><th>Student</th>${domainHeaders}<th class="center">Weakest</th><th class="center">Min Z</th></tr></thead>
+        <thead><tr><th>Track</th><th class="center">Tier</th><th class="center">Baseline</th><th class="center">Current</th><th class="center">Goal</th><th class="center">% of Goal</th><th class="center">Status</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
@@ -615,28 +1223,47 @@ function renderProfile(){
 
   // Build domain cards
   const avail=availableWindows();
+  // Pre-compute cohort averages per domain for current window
+  const cohortAvgs={};
+  DOMAINS.forEach(d=>{
+    const vals=students.map(s=>getScore(s,d,currentWindow)).filter(v=>v!==null);
+    cohortAvgs[d]=vals.length?Math.round(mean(vals)):null;
+  });
+
   const domainCards=DOMAINS.map(d=>{
     const info=s[d];
     if(info.score===null){
       return`<div class="domain-card">
-        <div class="dc-top"><div class="dc-name">${config.domainNames[d]}</div><div style="font-size:12px;color:var(--text3)">No data</div></div>
+        <div class="dc-top"><div class="dc-name">${config.domainNames[d]}</div><div style="font-size:13px;color:var(--text3)">No data for ${currentWindow}</div></div>
       </div>`;
     }
 
-    const cLabel=cohortStatusLabel(info.cohortZ);
-    const bLabel=bmStatusLabel(info.bmZ);
+    const bm=getBenchmark(d,currentWindow);
+    const cohortAvg=cohortAvgs[d];
+    const score=info.score;
+
+    // Flat comparisons
+    const vsBm=score-bm;
+    const vsBmPct=Math.round((score/bm)*100);
+    const vsCohort=cohortAvg!==null?score-cohortAvg:null;
+
+    // vs benchmark pill
+    const bmPillClass=vsBm>=0?'above':Math.abs(vsBm)<=5?'near':'below';
+    const bmPillText=vsBm>=0?`+${vsBm} above`:`${vsBm} below`;
+
+    // vs cohort pill
+    let cohortPillHTML='';
+    if(vsCohort!==null){
+      const cpClass=vsCohort>=0?'above':Math.abs(vsCohort)<=3?'near':'below';
+      const cpText=vsCohort>=0?`+${Math.round(vsCohort)} above`:`${Math.round(vsCohort)} below`;
+      cohortPillHTML=`<span class="dc-stat-pill ${cpClass}">${cpText}</span>`;
+    }
+
+    // within-profile plain language
     const pz=info.profileZ;
-    const pLabel=pz>=0.5?'Strength':(pz<=-0.5?'Weakness':'Typical');
+    const pLabel=pz>=0.5?'Personal strength':(pz<=-0.5?'Personal weakness':'Typical for this student');
     const pClass=pz>=0.5?'badge-strength':(pz<=-0.5?'badge-flagged':'badge-typical');
     const cc=cardClass(info.cohortZ);
-
-    // Mini z-bar
-    const barWidth=Math.min(Math.abs(info.cohortZ)/3*50,50);
-    const barColor=info.cohortZ<0?'var(--critical)':'var(--strength)';
-    const barStyle=info.cohortZ<0
-      ?`left:${50-barWidth}%;width:${barWidth}%;background:${barColor}`
-      :`left:50%;width:${barWidth}%;background:${barColor}`;
-    const zVal=fmt(info.cohortZ,2);
 
     // Timeline
     let timelineHTML='';
@@ -661,45 +1288,67 @@ function renderProfile(){
       }
     }
 
+    // Progress bar pct — cap display at 110% so bar doesn't go crazy
+    const bmFillPct = Math.min((score/bm)*100, 110);
+    const bmExceeded = score >= bm;
+    const bmFillClass = score>=bm?'above': Math.abs(vsBm)<=5?'near':'below';
+
+    const cohortFillPct = cohortAvg ? Math.min((score/cohortAvg)*100, 110) : 0;
+    const cohortExceeded = cohortAvg !== null && score >= cohortAvg;
+    const cohortFillClass = vsCohort!==null?(vsCohort>=0?'above':Math.abs(vsCohort)<=3?'near':'below'):'below';
+
+    // Z-scores for footer
+    const cZ = info.cohortZ!==null ? fmt(info.cohortZ,2) : '—';
+    const bZ = info.bmZ!==null ? fmt(info.bmZ,2) : '—';
+    const pZ = info.profileZ!==null ? fmt(info.profileZ,2) : '—';
+
     return`<div class="domain-card ${cc}">
       <div class="dc-top">
         <div class="dc-name">${config.domainNames[d]}</div>
-        <div class="dc-score">${info.score}</div>
+        <div class="dc-score">${score}</div>
       </div>
       <div class="dc-badges">
-        <span class="badge ${statusClass(cLabel)}">${cLabel}</span>
         <span class="badge ${pClass}">${pLabel}</span>
       </div>
-      <div class="dc-metrics">
-        <div class="dc-metric">
-          <span class="dc-metric-label">vs cohort</span>
-          <div class="dc-metric-right">
-            <span class="dc-metric-val">${fmt(info.cohortZ,2)}</span>
-            <span class="badge ${statusClass(cLabel)}" style="font-size:10px">${cLabel}</span>
+      <div class="dc-progress-stats">
+        <div class="dc-progress-row">
+          <div class="dc-progress-header">
+            <span class="dc-progress-label">vs Benchmark (${bm})</span>
+            <span class="dc-progress-val">
+              ${vsBmPct}%
+              ${bmExceeded?`<span class="star-badge" title="Exceeds benchmark!">✦</span>`:''}
+            </span>
           </div>
-        </div>
-        <div class="dc-metric">
-          <span class="dc-metric-label">vs benchmark</span>
-          <div class="dc-metric-right">
-            <span class="dc-metric-val">${fmt(info.bmZ,2)}</span>
-            <span class="badge ${statusClass(bLabel)}" style="font-size:10px">${bLabel}</span>
+          <div class="dc-progress-track">
+            <div class="dc-progress-fill ${bmFillClass}" style="width:${Math.min(bmFillPct,100)}%"></div>
           </div>
+          <div class="dc-progress-sub">${score} / ${bm} · ${vsBm>=0?'+'+vsBm:vsBm} points</div>
         </div>
-        <div class="dc-metric">
-          <span class="dc-metric-label">within profile</span>
-          <div class="dc-metric-right">
-            <span class="dc-metric-val">${fmt(pz,2)}</span>
+        <div class="dc-progress-row">
+          <div class="dc-progress-header">
+            <span class="dc-progress-label">vs Class Avg${cohortAvg!==null?' ('+cohortAvg+')':''}</span>
+            <span class="dc-progress-val">
+              ${cohortAvg!==null?Math.round((score/cohortAvg)*100)+'%':'—'}
+              ${cohortExceeded?`<span class="star-badge" title="Above class average!">✦</span>`:''}
+            </span>
+          </div>
+          ${cohortAvg!==null?`<div class="dc-progress-track">
+            <div class="dc-progress-fill ${cohortFillClass}" style="width:${Math.min(cohortFillPct,100)}%"></div>
+          </div>
+          <div class="dc-progress-sub">${score} / ${cohortAvg} · ${vsCohort!==null?(Math.round(vsCohort)>=0?'+'+Math.round(vsCohort):Math.round(vsCohort)):''} points</div>`:''}
+        </div>
+      </div>
+      <div class="dc-footer">
+        ${timelineHTML ? `<div>${timelineHTML}</div>` : '<div></div>'}
+        <div class="dc-zscore-block">
+          <div class="dc-zscore-label">z-scores</div>
+          <div class="dc-zscore-vals">
+            <div class="dc-zscore-item"><div class="dc-zscore-item-label">cohort</div><div class="dc-zscore-item-val" style="color:${info.cohortZ!==null&&info.cohortZ<-1.0?'var(--critical-light)':info.cohortZ!==null&&info.cohortZ>=1.0?'var(--strength-light)':'var(--text3)'}">${cZ}</div></div>
+            <div class="dc-zscore-item"><div class="dc-zscore-item-label">benchmark</div><div class="dc-zscore-item-val" style="color:${info.bmZ!==null&&info.bmZ<-1.0?'var(--critical-light)':info.bmZ!==null&&info.bmZ>=0?'var(--strength-light)':'var(--text3)'}">${bZ}</div></div>
+            <div class="dc-zscore-item"><div class="dc-zscore-item-label">profile</div><div class="dc-zscore-item-val">${pZ}</div></div>
           </div>
         </div>
       </div>
-      <div class="dc-bar-wrap">
-        <div class="dc-bar-track">
-          <div class="dc-bar-center"></div>
-          <div class="dc-bar-fill" style="${barStyle}"></div>
-        </div>
-        <div class="dc-bar-labels"><span>−3</span><span>0</span><span>+3</span></div>
-      </div>
-      ${timelineHTML}
     </div>`;
   }).join('');
 
@@ -726,15 +1375,17 @@ function renderProfile(){
   return`<div>
     <div class="profile-select-wrap">
       <label>Student:</label>
-      <select id="student-select" onchange="selectedStudent=parseInt(this.value);render()">${options}</select>
+      <select id="student-select" onchange="selectedStudent=parseInt(this.value);profileChartMode='benchmark';render()">${options}</select>
       <div class="profile-name" style="margin-left:4px">${s.name}</div>
       ${flaggedDomains.length?`<span class="badge badge-flagged">${flaggedDomains.length} domain${flaggedDomains.length>1?'s':''} flagged</span>`:''}
       ${pmTracks.length?`<span class="tier-${pmTracks.some(t=>t.tier==3)?'3':'2'}-badge">PM Tier ${pmTracks.some(t=>t.tier==3)?'3':'2'}</span>`:''}
-      <button class="btn btn-sm" style="margin-left:auto" onclick="gotoPM('${s.name}')">Progress Monitoring</button>
+      <button class="btn btn-sm" style="margin-left:auto" onclick="setProfileChartMode(profileChartMode==='pm'?'benchmark':'pm')">${profileChartMode==='pm'?'← Benchmark Growth':'Progress Monitoring'}</button>
       ${renderWindowToggle(false)}
     </div>
 
     <div class="profile-score-bar">${scoreTiles}</div>
+
+    ${profileChartMode==='pm' ? renderProfilePMView(s.name) : renderGrowthChart(studentRaw, s.name)}
 
     ${strengthDomains.length?`<div class="callout callout-success"><strong>Relative strengths to leverage:</strong> ${strengthDomains.join(', ')}</div>`:''}
     ${flaggedDomains.length?`<div class="callout callout-warning"><strong>Domains needing support:</strong> ${flaggedDomains.join(', ')} — below cohort z −1.0</div>`:''}
@@ -1091,13 +1742,57 @@ function renderSettings(){
     return`<div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:12px;margin-top:4px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">${dnField}${winInputs}</div>`;
   }).join('');
   const activeWinInputs=WINDOWS.map(w=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text2)"><input type="radio" name="active-window" value="${w}" ${currentWindow===w?'checked':''} onchange="currentWindow=this.value;config.activeWindow=this.value"> ${w}</label>`).join('');
+
+  const scales=[
+    {id:'sm',label:'Small',sub:'~88%'},
+    {id:'md',label:'Medium',sub:'Default'},
+    {id:'lg',label:'Large',sub:'~115%'},
+    {id:'xl',label:'X-Large',sub:'~130%'},
+  ];
+  const scaleButtons=scales.map(s=>`
+    <button class="scale-btn ${currentScale===s.id?'active':''}" onclick="setScale('${s.id}')">
+      <span class="scale-btn-label">${s.label}</span>
+      <span class="scale-btn-sub">${s.sub}</span>
+    </button>`).join('');
+
+  const themes=[
+    {id:'navy',   name:'Navy',    sub:'Default — deep blue',
+     swatches:['#0f1f3d','#1a2e52','#4a9ee0']},
+    {id:'slate',  name:'Slate',   sub:'Light — warm off-white',
+     swatches:['#f2f0eb','#faf8f5','#2d6fa8']},
+    {id:'obsidian',name:'Obsidian',sub:'Dark — high contrast',
+     swatches:['#0d0d0d','#161616','#58a6e6']},
+  ];
+  const themeButtons=themes.map(t=>`
+    <button class="theme-btn ${currentTheme===t.id?'active':''}" onclick="setTheme('${t.id}')" style="min-width:140px">
+      <div class="theme-swatch">
+        ${t.swatches.map(c=>`<div class="theme-swatch-block" style="background:${c}"></div>`).join('')}
+      </div>
+      <span class="theme-btn-name">${t.name}</span>
+      <span class="theme-btn-sub">${t.sub}</span>
+    </button>`).join('');
+
   return`<div>
-    <div class="panel-header"><div class="panel-header-left"><div class="panel-title">Settings</div><div class="panel-sub">configure benchmarks, domain names, and active window</div></div></div>
+    <div class="panel-header"><div class="panel-header-left"><div class="panel-title">Settings</div><div class="panel-sub">display preferences · saved to this browser</div></div></div>
+
+    <div class="settings-section">
+      <div class="settings-title">Font &amp; Content Size</div>
+      <p style="font-size:13px;color:var(--text3);margin-bottom:16px">Scales all content in the main panel. The navigation bar stays fixed.</p>
+      <div class="display-setting-group">${scaleButtons}</div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Color Scheme</div>
+      <p style="font-size:13px;color:var(--text3);margin-bottom:16px">Choose a theme for the dashboard. Your preference is saved automatically.</p>
+      <div class="display-setting-group">${themeButtons}</div>
+    </div>
+
     <div class="settings-section">
       <div class="settings-title">Active Assessment Window</div>
       <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Select which window to display by default.</p>
       <div style="display:flex;gap:20px">${activeWinInputs}</div>
     </div>
+
     <div class="settings-section">
       <div class="settings-title">Domain Names &amp; Benchmarks by Window</div>
       <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Set benchmark targets per domain per window.</p>
@@ -1262,7 +1957,43 @@ function removePMPoint(studentName,trackId,idx){
 function bindEvents(){}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
 
+// ============================================================
+// DISPLAY PREFERENCES — scale & theme
+// ============================================================
+let currentScale = localStorage.getItem('mtss_scale')||'md';
+let currentTheme = localStorage.getItem('mtss_theme')||'navy';
+
+function applyDisplayPrefs(){
+  // Scale
+  const panel = document.getElementById('main-panel');
+  if(panel){
+    panel.classList.remove('scale-sm','scale-md','scale-lg','scale-xl');
+    panel.classList.add(`scale-${currentScale}`);
+  }
+  // Theme
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  // Header bg needs to follow theme too
+  const hdr = document.querySelector('.app-header');
+  if(hdr) hdr.style.background = 'var(--navy3)';
+  document.body.style.background = 'var(--bg)';
+}
+
+function setScale(s){
+  currentScale = s;
+  localStorage.setItem('mtss_scale', s);
+  applyDisplayPrefs();
+  render(); // re-render so active button updates
+}
+
+function setTheme(t){
+  currentTheme = t;
+  localStorage.setItem('mtss_theme', t);
+  applyDisplayPrefs();
+  render();
+}
+
 if(!students.length)students=JSON.parse(JSON.stringify(RAW_STUDENTS));
+applyDisplayPrefs();
 render();
 </script>
 </body>
